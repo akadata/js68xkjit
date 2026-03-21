@@ -1,0 +1,156 @@
+{
+  "cpuGenerations": {
+    "68000": {
+      "description": "Base instruction set",
+      "instructions": [
+        "ABCD", "ADD", "ADDA", "ADDX", "AND", "ANDI", "ASL", "ASR",
+        "BCHG", "BCLR", "BSET", "BSR", "BTST", "Bcc",
+        "CHK", "CLR", "CMP", "CMPA", "CMPI", "CMPM",
+        "DBcc", "DIVS", "DIVU",
+        "EOR", "EORI", "EXG", "EXT",
+        "JMP", "JSR",
+        "LEA", "LINK", "LSL", "LSR",
+        "MOVE", "MOVEA", "MOVEC", "MOVEM", "MOVEP", "MOVES", "MOVEQ",
+        "MULS", "MULU",
+        "NBCD", "NEG", "NEGX", "NOP", "NOT",
+        "OR", "ORI",
+        "PEA",
+        "RESET", "ROL", "ROR", "ROXL", "ROXR", "RTE", "RTR", "RTS",
+        "SBCD", "Scc", "STOP", "SUB", "SUBA", "SUBX", "SWAP",
+        "TAS", "TRAP", "TRAPV", "TST",
+        "UNLINK"
+      ]
+    },
+    "68010": {
+      "description": "Virtual memory support, privileged instruction changes",
+      "newInstructions": [
+        "MOVE from SR (unprivileged variant)",
+        "MOVE to CCR",
+        "MOVE from USP",
+        "MOVE to USP",
+        "RTE (enhanced for virtual memory)",
+        "MOVEC (move to/from control registers)"
+      ],
+      "modifiedInstructions": [
+        "MOVE from SR - changed from privileged to unprivileged"
+      ]
+    },
+    "68020": {
+      "description": "32-bit enhancements, bitfield instructions, new addressing modes",
+      "newInstructions": [
+        "BFxxx (bitfield operations): BFCHG, BFCLR, BFEXTS, BFEXTU, BFFFO, BFINS, BFSET, BFTST",
+        "CALLM", "RTM",
+        "CAS", "CAS2",
+        "CHK2", "CMP2",
+        "DIVS.L", "DIVU.L", "MULS.L", "MULU.L",
+        "LINK (32-bit)",
+        "PACK", "UNPK",
+        "TRAPcc"
+      ],
+      "newAddressingModes": [
+        "Memory indirect postindexed",
+        "Memory indirect preindexed",
+        "PC indirect with displacement",
+        "PC indirect with index and displacement",
+        "32-bit displacements"
+      ]
+    },
+    "68030": {
+      "description": "MMU, cache control, enhanced virtual memory",
+      "newInstructions": [
+        "PFLUSH (flush MMU/TLB)",
+        "PTEST (test MMU translation)",
+        "CPUSH (push cache)",
+        "CINV (invalidate cache)",
+        "MOVE16 (block move)"
+      ]
+    },
+    "68040": {
+      "description": "FPU integration, removed some instructions, new atomics",
+      "newInstructions": [
+        "FPU instructions (Fxxx) - 68881/68882 now integrated",
+        "CAS", "CAS2 (enhanced)",
+        "CPUSHL (cache push with lock)",
+        "MOVE16 (enhanced block move)"
+      ],
+      "removedInstructions": [
+        "Some bitfield instructions",
+        "CALLM/RTM removed",
+        "Some floating point emulated instructions"
+      ]
+    }
+  },
+  "opcodeLines": {
+    "0": {
+      "name": "Dynamic Bit Test/Modify & Immediate Logic",
+      "instructions": ["BTST", "BCHG", "BCLR", "BSET", "MOVEP", "ANDI", "ORI", "EORI", "AND", "OR", "EOR", "SUB", "ADD", "CMP", "ANDItoCCR", "ANDItoSR", "ORItoCCR", "ORItoSR", "EORItoCCR", "EORItoSR"]
+    },
+    "1": {
+      "name": "MOVE (byte)",
+      "instructions": ["MOVE.b"]
+    },
+    "2": {
+      "name": "MOVE (long)",
+      "instructions": ["MOVE.l", "MOVEA.l"]
+    },
+    "3": {
+      "name": "MOVE (word)",
+      "instructions": ["MOVE.w", "MOVEA.w"]
+    },
+    "4": {
+      "name": "Miscellaneous (trap, jumps, CCR/SR, etc.)",
+      "instructions": ["CHK", "LEA", "CLR", "NOT", "NEG", "NEGX", "TST", "TAS", "TRAP", "TRAPV", "EXT", "SWAP", "NOP", "STOP", "RTE", "RTS", "RTR", "LINK", "UNLINK", "MOVEM", "MOVE to/from SR/CCR/USP", "PEA", "JMP", "JSR", "RESET", "NBCD"]
+    },
+    "5": {
+      "name": "ADDQ/SUBQ & DBcc/Scc",
+      "instructions": ["ADDQ", "SUBQ", "DBcc", "Scc"]
+    },
+    "6": {
+      "name": "Branch Instructions",
+      "instructions": ["BRA", "BSR", "Bcc"]
+    },
+    "7": {
+      "name": "MOVEQ (move quick)",
+      "instructions": ["MOVEQ"]
+    },
+    "8": {
+      "name": "Divide & BCD Subtract",
+      "instructions": ["DIVS", "DIVU", "SBCD", "OR"]
+    },
+    "9": {
+      "name": "Subtract",
+      "instructions": ["SUB", "SUBA", "SUBX"]
+    },
+    "A": {
+      "name": "Trap / F-line (unimplemented)",
+      "instructions": ["TRAP", "F-line emulator"]
+    },
+    "B": {
+      "name": "Compare & EOR",
+      "instructions": ["CMP", "CMPA", "CMPI", "EOR"]
+    },
+    "C": {
+      "name": "Multiply & BCD Add",
+      "instructions": ["MULS", "MULU", "ABCD", "AND", "EXG"]
+    },
+    "D": {
+      "name": "Add",
+      "instructions": ["ADD", "ADDA", "ADDX"]
+    },
+    "E": {
+      "name": "Shift & Rotate",
+      "instructions": ["ASL", "ASR", "LSL", "LSR", "ROL", "ROR", "ROXL", "ROXR"]
+    },
+    "F": {
+      "name": "F-line / Floating Point",
+      "instructions": ["FPU (68040+)", "F-line emulator"]
+    }
+  },
+  "implementationStatus": {
+    "68000": {
+      "total": 73,
+      "implemented": 10,
+      "remaining": 63
+    }
+  }
+}

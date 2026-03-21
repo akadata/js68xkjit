@@ -1,7 +1,9 @@
 #!/bin/sh
+# Build script for j68k tests
+# Uses m68k-amigaos toolchain from /opt/amiga/bin/
 
-AS=m68k-pc-elf-as
-OBJCOPY=m68k-pc-elf-objcopy
+AS=/opt/amiga/bin/m68k-amigaos-as
+OBJCOPY=/opt/amiga/bin/m68k-amigaos-objcopy
 
 mkdir -p r
 
