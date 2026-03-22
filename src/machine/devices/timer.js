@@ -12,6 +12,7 @@ function Timer(options) {
     this.reload = this.defaultReload >>> 0;
     this.control = 0;
     this.pending = false;
+    this.ticks = 0;
 }
 
 Timer.CONTROL_ENABLE = 0x01;
@@ -24,12 +25,21 @@ Timer.prototype.attachIntc = function (intc) {
     this.intc = intc;
 };
 
+Timer.prototype.reset = function () {
+    this.count = this.defaultReload >>> 0;
+    this.reload = this.defaultReload >>> 0;
+    this.control = 0;
+    this.pending = false;
+    this.ticks = 0;
+};
+
 Timer.prototype.region = function () {
     var self = this;
     return {
         name: 'timer',
         start: self.start,
         end: self.end,
+        device: self,
         read8: function (address) {
             var offset = (address - self.start) >>> 0;
             if (offset < 4)
@@ -86,6 +96,7 @@ Timer.prototype.clearPending = function () {
 };
 
 Timer.prototype.raiseInterrupt = function () {
+    this.ticks = (this.ticks + 1) >>> 0;
     this.pending = true;
     if (this.intc && (this.control & Timer.CONTROL_IRQ_ENABLE) !== 0)
         this.intc.raise(this.irqLevel);

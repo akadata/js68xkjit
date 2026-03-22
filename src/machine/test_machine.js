@@ -68,7 +68,10 @@ function TestMachine(options) {
     this.rom = toUint8Array(options.rom, memoryMap.ROM_SIZE);
     this.overlayEnabled = options.overlay === undefined ? true : !!options.overlay;
 
-    this.bus = new Bus();
+    this.bus = new Bus({
+        addressMask: 0x00ffffff,
+        strictAlignment: true
+    });
     this.bus.map(Bus.createMemoryRegion('chip-ram', memoryMap.CHIP_RAM_START, this.chipRamSize, this.chipRam, true));
     if (this.fastRamSize !== 0)
         this.bus.map(Bus.createMemoryRegion('fast-ram', memoryMap.FAST_RAM_START, this.fastRamSize, this.fastRam, true));
@@ -77,6 +80,8 @@ function TestMachine(options) {
     this.cpu = new j68.j68();
     this.cpu.type = resolveCpuType(options.cpuType);
     this.monitor = null;
+    this.monitorTrapHandler = null;
+    this.lastFault = null;
     this.intc = null;
     this.timers = [];
     this.nominalCpuHz = options.nominalCpuHz === undefined ? 1000000 : options.nominalCpuHz >>> 0;
@@ -85,67 +90,139 @@ function TestMachine(options) {
     this.attachContextBus();
 }
 
+TestMachine.prototype.clearFault = function () {
+    this.lastFault = null;
+};
+
+TestMachine.prototype.captureFault = function (error) {
+    var context = this.cpu.context;
+    var faultPc = context.pc >>> 0;
+    var faultOp = 0;
+    try {
+        faultOp = context.fetch(faultPc) & 0xffff;
+    } catch (ignored) {
+        faultOp = 0;
+    }
+    context.halt = true;
+    this.lastFault = {
+        pc: faultPc,
+        op: faultOp >>> 0,
+        sr: context.sr & 0xffff,
+        d0: context.d[0] >>> 0,
+        d1: context.d[1] >>> 0,
+        a0: context.a[0] >>> 0,
+        a1: context.a[1] >>> 0,
+        message: error && error.message ? error.message : String(error || 'fault')
+    };
+    return this.lastFault;
+};
+
+TestMachine.prototype.withSuppressedCoreNoise = function (fn) {
+    var original = console.assert;
+    var originalLog = this.cpu.log;
+    console.assert = function (condition) {
+        return condition;
+    };
+    this.cpu.log = function () {};
+    try {
+        return fn();
+    } finally {
+        console.assert = original;
+        this.cpu.log = originalLog;
+    }
+};
+
 TestMachine.prototype.isOverlayAddress = function (address) {
-    address >>>= 0;
+    address = this.bus.normalizeAddress(address);
     return this.overlayEnabled && address >= memoryMap.RESET_OVERLAY_START && address < memoryMap.RESET_OVERLAY_START + this.rom.length;
 };
 
-TestMachine.prototype.read8 = function (address) {
-    address >>>= 0;
+TestMachine.prototype.read8 = function (address, meta) {
+    address = this.bus.normalizeAddress(address);
     if (this.isOverlayAddress(address))
         return this.rom[address - memoryMap.RESET_OVERLAY_START] & 0xff;
-    return this.bus.read8(address);
+    return this.bus.read8(address, meta);
 };
 
-TestMachine.prototype.read16 = function (address) {
-    address >>>= 0;
-    return ((this.read8(address) << 8) | this.read8(address + 1)) >>> 0;
+TestMachine.prototype.read16 = function (address, meta) {
+    address = this.bus.normalizeAddress(address);
+    this.bus.assertAligned(address, 2);
+    if (this.isOverlayAddress(address) || this.isOverlayAddress(address + 1))
+        return ((this.read8(address, meta) << 8) | this.read8(address + 1, meta)) >>> 0;
+    return this.bus.read16(address, meta);
 };
 
-TestMachine.prototype.read32 = function (address) {
-    address >>>= 0;
-    return (((this.read16(address) << 16) >>> 0) | this.read16(address + 2)) >>> 0;
+TestMachine.prototype.read32 = function (address, meta) {
+    address = this.bus.normalizeAddress(address);
+    this.bus.assertAligned(address, 4);
+    if (this.isOverlayAddress(address) || this.isOverlayAddress(address + 3))
+        return (((this.read16(address, meta) << 16) >>> 0) | this.read16(address + 2, meta)) >>> 0;
+    return this.bus.read32(address, meta);
 };
 
-TestMachine.prototype.write8 = function (address, data) {
-    this.bus.write8(address >>> 0, data & 0xff);
+TestMachine.prototype.write8 = function (address, data, meta) {
+    this.bus.write8(address >>> 0, data & 0xff, meta);
     this.cpu.context.c = {};
     return true;
 };
 
-TestMachine.prototype.write16 = function (address, data) {
-    this.bus.write16(address >>> 0, data & 0xffff);
+TestMachine.prototype.write16 = function (address, data, meta) {
+    this.bus.write16(address >>> 0, data & 0xffff, meta);
     this.cpu.context.c = {};
     return true;
 };
 
-TestMachine.prototype.write32 = function (address, data) {
-    this.bus.write32(address >>> 0, data >>> 0);
+TestMachine.prototype.write32 = function (address, data, meta) {
+    this.bus.write32(address >>> 0, data >>> 0, meta);
     this.cpu.context.c = {};
     return true;
+};
+
+TestMachine.prototype.currentFunctionCode = function (kind) {
+    var context = this.cpu.context;
+    var supervisor;
+
+    context.syncSr();
+    supervisor = (context.sr & 0x2000) !== 0;
+    if (kind === 'fetch')
+        return supervisor ? Bus.FC_SUPERVISOR_PROGRAM : Bus.FC_USER_PROGRAM;
+    return supervisor ? Bus.FC_SUPERVISOR_DATA : Bus.FC_USER_DATA;
+};
+
+TestMachine.prototype.busMeta = function (kind, value) {
+    var meta = {
+        fc: this.currentFunctionCode(kind),
+        kind: kind,
+        ipl: this.getInterruptLevel()
+    };
+    if (value !== undefined)
+        meta.value = value >>> 0;
+    return meta;
 };
 
 TestMachine.prototype.attachContextBus = function () {
     var self = this;
     var context = this.cpu.context;
 
-    context.l8 = function (address) { return self.read8(address >>> 0); };
-    context.l16 = function (address) { return self.read16(address >>> 0); };
-    context.l32 = function (address) { return self.read32(address >>> 0); };
-    context.fetch = function (address) { return self.read16(address >>> 0); };
+    context.l8 = function (address) { return self.read8(address >>> 0, self.busMeta('read')); };
+    context.l16 = function (address) { return self.read16(address >>> 0, self.busMeta('read')); };
+    context.l32 = function (address) { return self.read32(address >>> 0, self.busMeta('read')); };
+    context.fetch = function (address) { return self.read16(address >>> 0, self.busMeta('fetch')); };
 
-    context.s8 = function (address, data) { return self.write8(address >>> 0, data & 0xff); };
-    context.s16 = function (address, data) { return self.write16(address >>> 0, data & 0xffff); };
-    context.s32 = function (address, data) { return self.write32(address >>> 0, data >>> 0); };
+    context.s8 = function (address, data) { return self.write8(address >>> 0, data & 0xff, self.busMeta('write', data)); };
+    context.s16 = function (address, data) { return self.write16(address >>> 0, data & 0xffff, self.busMeta('write', data)); };
+    context.s32 = function (address, data) { return self.write32(address >>> 0, data >>> 0, self.busMeta('write', data)); };
 };
 
 TestMachine.prototype.mapDevice = function (region) {
+    if (region && typeof region.region === 'function')
+        return this.bus.attach(region);
     return this.bus.map(region);
 };
 
 TestMachine.prototype.attachIntc = function (intc) {
     this.intc = intc;
-    this.mapDevice(intc.region());
+    this.mapDevice(intc);
     return intc;
 };
 
@@ -155,17 +232,25 @@ TestMachine.prototype.attachTimer = function (timer) {
         timer.attachIntc(this.intc);
     if (this.intc)
         this.intc.registerSource(timer.irqLevel, timer.acknowledge.bind(timer));
-    this.mapDevice(timer.region());
+    this.mapDevice(timer);
     return timer;
+};
+
+TestMachine.prototype.primaryTimer = function () {
+    return this.timers.length === 0 ? null : this.timers[0];
 };
 
 TestMachine.prototype.attachMonitor = function (uart, options) {
     var self = this;
     this.monitor = new CommandLoop(this, uart, options);
+    this.monitorSuppressEnterPrompt = false;
     this.cpu.context.f = function (inst) {
+        if (self.monitorTrapHandler && self.monitorTrapHandler(inst))
+            return;
         if (inst !== 0xa000)
             throw new Error('unsupported monitor service $' + inst.toString(16));
-        self.monitor.enter();
+        self.monitor.enter(self.monitorSuppressEnterPrompt);
+        self.monitorSuppressEnterPrompt = false;
         self.cpu.context.halt = true;
     };
     return this.monitor;
@@ -177,6 +262,7 @@ TestMachine.prototype.setOverlay = function (enabled) {
 
 TestMachine.prototype.reset = function () {
     var context = this.cpu.context;
+    this.bus.reset();
     context.c = {};
     context.halt = false;
     context.i = 0;
@@ -211,15 +297,11 @@ TestMachine.prototype.acceptInterrupt = function (level) {
 TestMachine.prototype.advanceDevices = function (instructions) {
     if (instructions <= 0)
         return;
-    var timerTicks = instructions;
-    for (var i = 0; i < this.timers.length; ++i)
-        this.timers[i].advance(timerTicks);
+    this.bus.advance(instructions);
 };
 
 TestMachine.prototype.pollInterrupts = function () {
-    if (!this.intc)
-        return 0;
-    var level = this.intc.highestPending();
+    var level = this.getInterruptLevel();
     if (level === 0)
         return 0;
     var currentMask = (this.cpu.context.sr >> 8) & 7;
@@ -229,18 +311,33 @@ TestMachine.prototype.pollInterrupts = function () {
     return level;
 };
 
+TestMachine.prototype.getInterruptLevel = function () {
+    if (this.intc)
+        return this.intc.highestPending();
+    return this.bus.resolveIpl();
+};
+
 TestMachine.prototype.runBlock = function () {
     var context = this.cpu.context;
     this.pollInterrupts();
     if (context.halt)
         return false;
-    var pc = context.pc >>> 0;
-    var beforeInstructions = context.i >>> 0;
-    if (!context.c[pc])
-        context.c[pc] = this.cpu.compile();
-    context.c[pc](context);
-    this.advanceDevices((context.i - beforeInstructions) >>> 0);
-    return true;
+    try {
+        var pc = context.pc >>> 0;
+        var beforeInstructions = context.i >>> 0;
+        if (!context.c[pc])
+            context.c[pc] = this.withSuppressedCoreNoise(function () {
+                return this.cpu.compile();
+            }.bind(this));
+        this.withSuppressedCoreNoise(function () {
+            context.c[pc](context);
+        });
+        this.advanceDevices((context.i - beforeInstructions) >>> 0);
+        return true;
+    } catch (error) {
+        this.captureFault(error);
+        return false;
+    }
 };
 
 TestMachine.prototype.runBlocks = function (maxBlocks) {
@@ -265,6 +362,68 @@ TestMachine.prototype.runUntil = function (predicate, maxBlocks) {
             return predicate(this);
     }
     return predicate(this);
+};
+
+TestMachine.prototype.runUntilInstruction = function (predicate, maxInstructions) {
+    var limit = maxInstructions === undefined ? 1000 : maxInstructions | 0;
+    for (var i = 0; i < limit; ++i) {
+        if (predicate(this))
+            return true;
+        if (!this.stepInstruction())
+            return predicate(this);
+    }
+    return predicate(this);
+};
+
+TestMachine.prototype.stepInstruction = function () {
+    var context = this.cpu.context;
+    this.pollInterrupts();
+    if (context.halt)
+        return null;
+
+    try {
+        var pc = context.pc >>> 0;
+        var decoded = this.withSuppressedCoreNoise(function () {
+            return this.cpu.decode(pc);
+        }.bind(this));
+        var code = decoded.code;
+        var lines = [];
+        var outFlags = decoded.out || {};
+        var flagOrder = [ 'x', 'n', 'z', 'v', 'c' ];
+        var writesPc = !!(decoded.in && decoded.in.pc);
+        var i;
+
+        if (decoded.in && decoded.in.sr)
+            lines.push('c.syncSr();');
+        if (decoded.in && decoded.in.pc)
+            lines.push('c.pc=' + (decoded.pc >>> 0) + ';');
+        lines = lines.concat(Array.isArray(code) ? code.slice() : [ code || '' ]);
+        for (i = 0; i < lines.length; ++i) {
+            if (/c\.pc\s*=/.test(lines[i])) {
+                writesPc = true;
+                break;
+            }
+        }
+        for (i = 0; i < flagOrder.length; ++i) {
+            var flag = flagOrder[i];
+            if (outFlags[flag])
+                lines.push('c.c' + flag + '=' + outFlags[flag] + ';');
+        }
+        if (!writesPc)
+            lines.push('c.pc=' + (decoded.pc >>> 0) + ';');
+        if (decoded.error)
+            lines.push('c.halt=true;');
+        lines.push('c.i+=1;');
+
+        this.withSuppressedCoreNoise(function () {
+            new Function('c', lines.join('\n'))(context);
+        });
+        this.advanceDevices(1);
+        return decoded;
+    } catch (error) {
+        this.captureFault(error);
+        return null;
+    }
 };
 
 TestMachine.prototype.loadRomBytes = function (address, bytes) {

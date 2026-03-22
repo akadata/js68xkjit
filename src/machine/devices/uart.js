@@ -24,6 +24,7 @@ Uart.prototype.region = function () {
         name: 'uart',
         start: this.start,
         end: this.end,
+        device: self,
         read8: function (address) {
             var offset = (address - self.start) >>> 0;
             if (offset <= 3) {
@@ -59,6 +60,11 @@ Uart.prototype.enqueueRxString = function (text) {
 Uart.prototype.writeString = function (text) {
     for (var i = 0; i < text.length; ++i)
         this.writeData(text.charCodeAt(i));
+};
+
+Uart.prototype.reset = function () {
+    this.tx = [];
+    this.rx = [];
 };
 
 Uart.prototype.txString = function () {

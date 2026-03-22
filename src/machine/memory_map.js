@@ -41,6 +41,10 @@ module.exports = {
     DEBUGREGS_END: 0x00de003f,
     DEBUGREGS_SIZE: 0x10,
 
+    VIDEO_START: 0x00de0100,
+    VIDEO_END: 0x00de01ff,
+    VIDEO_SIZE: 0x100,
+
     ROM_START: 0x00f80000,
     ROM_END: 0x00ffffff,
     ROM_SIZE: 0x00080000,

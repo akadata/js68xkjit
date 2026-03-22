@@ -2522,16 +2522,32 @@ exports.j68 = (function () {
         var dstReg = (inst >> 9) & 7;
         var dstMode = (inst >> 6) & 7;
         var srcInst = inst & 0x1ff;
-        var ea = this.effectiveAddress(
+        var src = this.effectiveAddress(
             pc, srcInst,
-            function (ea) { return 'c.d[' + dstReg + ']=(' + ea + ')&0xff;'; },
-            function (ea) { return 'c.d[' + dstReg + ']=c.l8(' + ea + ')&0xff;'; },
+            function (ea) { return 'var src=(' + ea + ')&0xff;'; },
+            function (ea) { return 'var src=c.l8(' + ea + ')&0xff;'; },
+            1
+        );
+
+        if (dstMode === 1) {
+            return {
+                'in': { 'pc': true },
+                'code': [ 'c.exception(4,' + pc + ');' ],
+                'pc': src.pc,
+                'quit': true
+            };
+        }
+
+        var dst = this.effectiveAddressDst(
+            src.pc, dstMode, dstReg,
+            function (ea) { return ea + '=(' + ea + '&0xffffff00)|src;'; },
+            function (ea) { return 'c.s8(' + ea + ',src);'; },
             1
         );
         return {
-            'code': [ ea.code ],
-            'out': this.flagMove('c.d[' + dstReg + ']'),
-            'pc': ea.pc
+            'code': [ src.code, dst.code ],
+            'out': this.flagMove('src'),
+            'pc': dst.pc
         };
     };
     

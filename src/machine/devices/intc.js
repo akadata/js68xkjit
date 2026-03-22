@@ -12,6 +12,7 @@ Intc.prototype.region = function () {
         name: 'intc',
         start: self.start,
         end: self.end,
+        device: self,
         read8: function (address) {
             var offset = (address - self.start) >>> 0;
             if (offset < 4)
@@ -41,6 +42,11 @@ Intc.prototype.registerSource = function (level, onAck) {
     this.handlers[level & 7] = onAck || null;
 };
 
+Intc.prototype.reset = function () {
+    this.pending = 0;
+    this.mask = 0x7f;
+};
+
 Intc.prototype.raise = function (level) {
     if (level < 1 || level > 7)
         throw new RangeError('invalid IRQ level');
@@ -60,6 +66,10 @@ Intc.prototype.highestPending = function () {
             return level;
     }
     return 0;
+};
+
+Intc.prototype.getInterruptLevel = function () {
+    return this.highestPending();
 };
 
 module.exports = Intc;
