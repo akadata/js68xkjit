@@ -8,6 +8,7 @@ var Intc = require('../src/machine/devices/intc');
 var Timer = require('../src/machine/devices/timer');
 var assemble = require('./support/assemble_m68k');
 var monitorCommands = require('../src/monitor/commands');
+var createLineEditor = require('./support/line_editor').createLineEditor;
 
 var cpuType = process.env.J68_CPU_TYPE || '68000';
 
@@ -50,10 +51,15 @@ function main() {
     var script = decodeScript(process.env.J68_MONITOR_SCRIPT || '');
     var exitOnMonitor = process.env.J68_MONITOR_EXIT_ON_MONITOR === '1';
     var settledMonitorTicks = 0;
+    var lineEditor = null;
 
     function flushOutput() {
         var text = uart.consumeTxString();
-        if (text !== '')
+        if (text === '')
+            return;
+        if (lineEditor)
+            lineEditor.handleOutput(text);
+        else
             process.stdout.write(text);
     }
 
@@ -72,13 +78,22 @@ function main() {
     process.stdin.setEncoding('latin1');
     if (process.stdin.isTTY)
         process.stdin.setRawMode(true);
+    if (process.stdin.isTTY && !script) {
+        lineEditor = createLineEditor({
+            write: function (text) { process.stdout.write(text); },
+            onLine: function (line) { uart.enqueueRxString(line); }
+        });
+    }
     process.stdin.resume();
     process.stdin.on('data', function (chunk) {
         for (var i = 0; i < chunk.length; ++i) {
             if (chunk.charCodeAt(i) === 3)
                 shutdown(0);
         }
-        uart.enqueueRxString(chunk);
+        if (lineEditor)
+            lineEditor.handleChunk(chunk);
+        else
+            uart.enqueueRxString(chunk);
     });
 
     process.on('SIGINT', function () {
@@ -125,4 +140,9 @@ function main() {
     }, 10);
 }
 
-main();
+if (require.main === module)
+    main();
+
+module.exports = {
+    buildMachine: buildMachine
+};

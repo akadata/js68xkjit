@@ -21,6 +21,7 @@ SYSTEM_TESTS=(
     test/system/monitor_disasm.test.js
     test/system/monitor_exec.test.js
     test/system/monitor_cli.test.js
+    test/system/monitor_line_editor.test.js
     test/system/monitor_program_output.test.js
     test/system/monitor_program_input.test.js
     test/system/monitor_timer.test.js

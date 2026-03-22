@@ -1,6 +1,6 @@
 # j68 Test Computer
 
-A small virtual Motorola 68k test computer built around the `j68` CPU core.
+A small virtual Motorola 68k test computer built around the `j68` CPU core created by `Takashi Toyoshima` [https://github.com/toyoshim/j68](https://github.com/toyoshim/j68)
 
 This project is a bring-up machine, not a full Amiga implementation. The focus is:
 
