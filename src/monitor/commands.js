@@ -309,6 +309,42 @@ function visibleEntries(root, matcher) {
         .sort();
 }
 
+function isPrintableByte(value) {
+    return value >= 0x20 && value <= 0x7e && value !== 0x27;
+}
+
+function formatDcBItems(bytes) {
+    var items = [];
+    var i = 0;
+    while (i < bytes.length) {
+        if (isPrintableByte(bytes[i])) {
+            var start = i;
+            while (i < bytes.length && isPrintableByte(bytes[i]))
+                i += 1;
+            if ((i - start) >= 2) {
+                items.push("'" + Buffer.from(bytes.slice(start, i)).toString('latin1') + "'");
+                continue;
+            }
+            i = start;
+        }
+        items.push('$' + hex(bytes[i], 2).toLowerCase());
+        i += 1;
+    }
+    return items.join(',');
+}
+
+function emitDataAsDcB(machine, start, end, lines) {
+    var addr = start >>> 0;
+    while (addr < end) {
+        var chunk = [];
+        var count = Math.min(16, (end - addr) >>> 0);
+        for (var i = 0; i < count; ++i)
+            chunk.push(machine.read8(addr + i));
+        lines.push('dc.b ' + formatDcBItems(chunk));
+        addr = (addr + count) >>> 0;
+    }
+}
+
 function saveMemory(machine, valueText) {
     var parts = valueText.trim().split(/\s+/).filter(Boolean);
     var address;
@@ -348,6 +384,62 @@ function loadMemory(machine, valueText) {
     return 'LOADED ' + bytes.length + ' ' + filename;
 }
 
+function saveAsm(machine, valueText) {
+    var parts = valueText.trim().split(/\s+/).filter(Boolean);
+    var address;
+    var length;
+    var filename;
+    var filePath;
+    var pc;
+    var end;
+    var lines = [];
+    var dataMode = false;
+
+    if (parts.length < 3)
+        throw new Error('usage: saveasm <addr> <len> <name>');
+    ensureSourceRoot();
+    address = parseAddress(parts[0]);
+    length = parseNumber(parts[1]);
+    filename = path.basename(parts[2]);
+    filePath = path.join(sourceRoot, filename);
+    pc = address >>> 0;
+    end = (address + length) >>> 0;
+
+    lines.push('a ' + hex(address, 8));
+    while (pc < end) {
+        if (dataMode) {
+            emitDataAsDcB(machine, pc, end, lines);
+            break;
+        }
+        var remaining = (end - pc) >>> 0;
+        var decoded = disassembler.disassembleOne(machine, pc);
+        if (decoded.text.indexOf('DC.W ') === 0) {
+            if (remaining >= 2) {
+                lines.push('dc.w ' + decoded.text.slice(5).trim().toLowerCase());
+                pc = (pc + 2) >>> 0;
+                continue;
+            }
+            lines.push('dc.b $' + hex(machine.read8(pc), 2).toLowerCase());
+            pc = (pc + 1) >>> 0;
+            continue;
+        }
+        if (decoded.next > end) {
+            while (pc < end) {
+                lines.push('dc.b $' + hex(machine.read8(pc), 2).toLowerCase());
+                pc = (pc + 1) >>> 0;
+            }
+            break;
+        }
+        lines.push(decoded.text.toLowerCase());
+        pc = decoded.next >>> 0;
+        if (decoded.text === 'MONITOR' || decoded.text === 'RTS' || decoded.text === 'RTE')
+            dataMode = true;
+    }
+    lines.push('');
+    fs.writeFileSync(filePath, lines.join('\n'));
+    return 'SAVED ASM ' + length + ' ' + filename;
+}
+
 function loadAsm(machine, valueText) {
     var parts = valueText.trim().split(/\s+/).filter(Boolean);
     var address;
@@ -369,39 +461,14 @@ function listSaveFiles() {
 }
 
 function loadAsmFile(machine, address, filename, filePath) {
-    var lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
-    var pc = address >>> 0;
-    var firstLine = true;
-    var byteCount = 0;
+    var source = fs.readFileSync(filePath, 'utf8');
+    var assembled = assembler.assembleText(address >>> 0, source);
     var i;
 
-    for (i = 0; i < lines.length; ++i) {
-        var raw = lines[i];
-        var cleaned = assembler.cleanLine(raw);
-        var match;
-        var bytes;
-        var j;
-        if (cleaned === '')
-            continue;
-        if (firstLine) {
-            match = /^a\s+(\$[0-9a-f]+|(0x)?[0-9a-f]+)$/i.exec(cleaned);
-            if (match) {
-                pc = parseAddress(match[1]);
-                firstLine = false;
-                continue;
-            }
-        }
-        bytes = assembler.assembleLine(pc, cleaned);
-        if (!bytes)
-            continue;
-        for (j = 0; j < bytes.length; ++j)
-            machine.write8(pc + j, bytes[j]);
-        pc = (pc + bytes.length) >>> 0;
-        byteCount += bytes.length;
-        firstLine = false;
-    }
+    for (i = 0; i < assembled.bytes.length; ++i)
+        machine.write8(assembled.address + i, assembled.bytes[i]);
 
-    return 'LOADED ASM ' + byteCount + ' ' + filename + ' END=' + hex(pc, 8);
+    return 'LOADED ASM ' + assembled.length + ' ' + filename + ' END=' + hex((assembled.address + assembled.length) >>> 0, 8);
 }
 
 function sourceCommand(machine, valueText) {
@@ -506,6 +573,7 @@ function execute(machine, line) {
                 'gl <addr>      long run',
                 't [addr]       single-step',
                 'save <addr> <len> <name>',
+                'saveasm <addr> <len> <name>',
                 'load <addr> <name>',
                 'loadasm <addr> <name>',
                 'source          list source/ files',
@@ -535,6 +603,8 @@ function execute(machine, line) {
             return startAssembler(machine, trimmed.replace(/^a\s+/i, ''));
         if (/^save\s+/i.test(trimmed))
             return saveMemory(machine, trimmed.replace(/^save\s+/i, ''));
+        if (/^saveasm\s+/i.test(trimmed))
+            return saveAsm(machine, trimmed.replace(/^saveasm\s+/i, ''));
         if (/^load\s+/i.test(trimmed))
             return loadMemory(machine, trimmed.replace(/^load\s+/i, ''));
         if (/^loadasm\s+/i.test(trimmed))

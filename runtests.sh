@@ -10,11 +10,13 @@ node test/system/monitor_errors.test.js
 node test/system/monitor_reset.test.js
 node test/system/monitor_patch_loadsave.test.js
 node test/system/monitor_loadasm.test.js
+node test/system/monitor_saveasm.test.js
 node test/system/monitor_assemble_roundtrip.test.js
 node test/system/monitor_assemble_loop.test.js
 node test/system/monitor_disasm.test.js
 node test/system/monitor_exec.test.js
 node test/system/monitor_cli.test.js
+node test/system/monitor_program_output.test.js
 node test/system/monitor_bench.test.js
 node test/system/monitor_timer.test.js
 node test/system/irq.test.js

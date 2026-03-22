@@ -6,6 +6,54 @@
 - `cd test && node runner.js` must stay `231/233`.
 - `CALLM` and `RTM` remain explicitly deferred and untouched.
 
+## Current Machine / Monitor Checkpoint
+
+The small j68 software environment has reached a clean checkpoint:
+
+- ROM monitor is stable
+- `source/` + `loadasm` workflow is stable
+- host-built binaries in `work/programs/` build into `save/`
+- reusable guest-side output helpers now exist
+- visible formatted output works from real 68k binaries
+
+Current reusable guest-side helper layer:
+
+- `work/programs/lib/console.inc`
+  - `putc`
+  - `puts`
+  - `newline`
+  - `puthex32`
+  - `puts_hex32`
+
+Current visible proof binaries:
+
+- `hello_uart.bin`
+- `puthex.bin`
+- `print_pi16.bin`
+- `print_status.bin`
+- `ram_checksum.bin`
+- `pi16_nilakantha.bin`
+
+This is now a proper little software environment, not just isolated probes.
+
+## Next Subsystem Boundary
+
+The next clean subsystem is input, not `CALLM/RTM`.
+
+Recommended next order:
+
+1. guest-side input helpers
+   - `getc`
+   - prompt helper
+   - simple line read
+2. one interactive demo binary
+   - `echo_line.bin`
+3. only after input is solid:
+   - cooperative multitasking work
+
+Cooperative multitasking remains on the roadmap, but it should come after the
+input-side helper layer so the machine has a usable conversational path first.
+
 ## Current Architectural Gap
 
 The machine has a useful memory API and device map, but it is still growing from a memory map into a 68k-style external bus model.

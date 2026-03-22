@@ -1,34 +1,23 @@
-; proof of life for the monitor assembler subset
-; prints HELLO WORLD ten times, each followed by CR/LF, then returns
-; note: this is monitor-source, so it uses no labels or data directives
-moveq #10,d7
+; print HELLO WORLD ten times and return
+moveq #9,d7
 movea.l #$00de0000,a1
-moveq #72,d0
+
+line_loop:
+movea.l #message,a0
+
+char_loop:
+move.b (a0)+,d0
+beq line_done
 move.b d0,(a1)
-moveq #69,d0
-move.b d0,(a1)
-moveq #76,d0
-move.b d0,(a1)
-moveq #76,d0
-move.b d0,(a1)
-moveq #79,d0
-move.b d0,(a1)
-moveq #32,d0
-move.b d0,(a1)
-moveq #87,d0
-move.b d0,(a1)
-moveq #79,d0
-move.b d0,(a1)
-moveq #82,d0
-move.b d0,(a1)
-moveq #76,d0
-move.b d0,(a1)
-moveq #68,d0
-move.b d0,(a1)
+bra char_loop
+
+line_done:
 moveq #13,d0
 move.b d0,(a1)
 moveq #10,d0
 move.b d0,(a1)
-subq.w #1,d7
-bne 00090008
+dbra d7,line_loop
 monitor
+
+message:
+dc.b 'HELLO WORLD',0

@@ -4,13 +4,10 @@ UART_DATA       equ $00DE0000
 MONITOR_TRAP    equ $A000
 
 start:
+        move.l  #$1234ABCD,d0
         movea.l #UART_DATA,a1
-        movea.l #message,a0
-        bsr.s   puts
+        bsr.s   puthex32
+        bsr.s   newline
         dc.w    MONITOR_TRAP
-
-message:
-        dc.b    'HELLO',13,10,0
-        even
 
         include "work/programs/lib/console.inc"

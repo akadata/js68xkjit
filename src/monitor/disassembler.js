@@ -57,6 +57,12 @@ function disassembleOne(machine, address) {
                 text: 'MOVE.B D' + srcReg + ',(A' + dstReg + ')'
             };
         }
+        if (dstMode === 0 && srcMode === 3) {
+            return {
+                next: pc + 2,
+                text: 'MOVE.B (A' + srcReg + ')+,D' + dstReg
+            };
+        }
     }
 
     if (line === 2) {
@@ -161,6 +167,20 @@ function disassembleOne(machine, address) {
         return {
             next: pc + 4,
             text: 'CMPI.B #' + hex4(machine.cpu.context.fetch(pc + 2) & 0xff) + ',D' + (inst & 7)
+        };
+    }
+
+    if ((inst & 0xf1c0) === 0x41c0 && srcMode === 7 && srcReg === 1) {
+        return {
+            next: pc + 6,
+            text: 'LEA ' + hex8(machine.cpu.context.l32(pc + 2)) + ',A' + dstReg
+        };
+    }
+
+    if ((inst & 0xf0f8) === 0x50c8) {
+        return {
+            next: pc + 4,
+            text: 'DBRA D' + (inst & 7) + ',' + formatBranchTarget(pc, s16(machine.cpu.context.fetch(pc + 2)), 4)
         };
     }
 
