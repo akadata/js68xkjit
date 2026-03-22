@@ -1,6 +1,7 @@
 var j68 = require('../j68');
 var Bus = require('./bus');
 var memoryMap = require('./memory_map');
+var CommandLoop = require('../monitor/command_loop');
 
 // Generic j68 laboratory machine with an Amiga-shaped memory layout.
 //
@@ -75,6 +76,11 @@ function TestMachine(options) {
 
     this.cpu = new j68.j68();
     this.cpu.type = resolveCpuType(options.cpuType);
+    this.monitor = null;
+    this.intc = null;
+    this.timers = [];
+    this.nominalCpuHz = options.nominalCpuHz === undefined ? 1000000 : options.nominalCpuHz >>> 0;
+    this.timerBaseHz = options.timerBaseHz === undefined ? 1000000 : options.timerBaseHz >>> 0;
 
     this.attachContextBus();
 }
@@ -137,6 +143,34 @@ TestMachine.prototype.mapDevice = function (region) {
     return this.bus.map(region);
 };
 
+TestMachine.prototype.attachIntc = function (intc) {
+    this.intc = intc;
+    this.mapDevice(intc.region());
+    return intc;
+};
+
+TestMachine.prototype.attachTimer = function (timer) {
+    this.timers.push(timer);
+    if (this.intc && !timer.intc)
+        timer.attachIntc(this.intc);
+    if (this.intc)
+        this.intc.registerSource(timer.irqLevel, timer.acknowledge.bind(timer));
+    this.mapDevice(timer.region());
+    return timer;
+};
+
+TestMachine.prototype.attachMonitor = function (uart, options) {
+    var self = this;
+    this.monitor = new CommandLoop(this, uart, options);
+    this.cpu.context.f = function (inst) {
+        if (inst !== 0xa000)
+            throw new Error('unsupported monitor service $' + inst.toString(16));
+        self.monitor.enter();
+        self.cpu.context.halt = true;
+    };
+    return this.monitor;
+};
+
 TestMachine.prototype.setOverlay = function (enabled) {
     this.overlayEnabled = !!enabled;
 };
@@ -153,14 +187,59 @@ TestMachine.prototype.reset = function () {
     context.pc = this.read32(4) >>> 0;
 };
 
+TestMachine.prototype.acceptInterrupt = function (level) {
+    var context = this.cpu.context;
+    var vector = 24 + level;
+    context.syncSr();
+    var oldSr = context.sr & 0xffff;
+    if ((oldSr & 0x2000) === 0) {
+        context.usp = context.a[7] >>> 0;
+        context.a[7] = context.ssp >>> 0;
+    }
+    context.a[7] = (context.a[7] - 6) >>> 0;
+    context.s16(context.a[7], oldSr);
+    context.s32(context.a[7] + 2, context.pc >>> 0);
+    context.ssp = context.a[7] >>> 0;
+    context.setSr(((oldSr & 0x00ff) | 0x2000 | ((level & 7) << 8)) & 0xffff);
+    context.pc = this.read32(vector << 2) >>> 0;
+    context.c = {};
+    context.halt = false;
+    if (this.intc)
+        this.intc.acknowledge(level);
+};
+
+TestMachine.prototype.advanceDevices = function (instructions) {
+    if (instructions <= 0)
+        return;
+    var timerTicks = instructions;
+    for (var i = 0; i < this.timers.length; ++i)
+        this.timers[i].advance(timerTicks);
+};
+
+TestMachine.prototype.pollInterrupts = function () {
+    if (!this.intc)
+        return 0;
+    var level = this.intc.highestPending();
+    if (level === 0)
+        return 0;
+    var currentMask = (this.cpu.context.sr >> 8) & 7;
+    if (level <= currentMask)
+        return 0;
+    this.acceptInterrupt(level);
+    return level;
+};
+
 TestMachine.prototype.runBlock = function () {
     var context = this.cpu.context;
+    this.pollInterrupts();
     if (context.halt)
         return false;
     var pc = context.pc >>> 0;
+    var beforeInstructions = context.i >>> 0;
     if (!context.c[pc])
         context.c[pc] = this.cpu.compile();
     context.c[pc](context);
+    this.advanceDevices((context.i - beforeInstructions) >>> 0);
     return true;
 };
 
@@ -170,6 +249,22 @@ TestMachine.prototype.runBlocks = function (maxBlocks) {
         if (!this.runBlock())
             break;
     }
+};
+
+TestMachine.prototype.pollMonitor = function () {
+    if (this.monitor && this.monitor.active)
+        this.monitor.poll();
+};
+
+TestMachine.prototype.runUntil = function (predicate, maxBlocks) {
+    var limit = maxBlocks === undefined ? 1000 : maxBlocks | 0;
+    for (var i = 0; i < limit; ++i) {
+        if (predicate(this))
+            return true;
+        if (!this.runBlock())
+            return predicate(this);
+    }
+    return predicate(this);
 };
 
 TestMachine.prototype.loadRomBytes = function (address, bytes) {

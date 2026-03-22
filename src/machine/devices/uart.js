@@ -27,9 +27,7 @@ Uart.prototype.region = function () {
         read8: function (address) {
             var offset = (address - self.start) >>> 0;
             if (offset <= 3) {
-                if (self.rx.length === 0)
-                    return 0;
-                return self.rx.shift() & 0xff;
+                return self.readData();
             }
             if (offset >= 4 && offset <= 7)
                 return self.status();
@@ -37,12 +35,20 @@ Uart.prototype.region = function () {
         },
         write8: function (address, value) {
             var offset = (address - self.start) >>> 0;
-            if (offset <= 3) {
-                self.tx.push(value & 0xff);
-                return;
-            }
+            if (offset <= 3)
+                self.writeData(value);
         }
     };
+};
+
+Uart.prototype.readData = function () {
+    if (this.rx.length === 0)
+        return 0;
+    return this.rx.shift() & 0xff;
+};
+
+Uart.prototype.writeData = function (value) {
+    this.tx.push(value & 0xff);
 };
 
 Uart.prototype.enqueueRxString = function (text) {
@@ -50,8 +56,19 @@ Uart.prototype.enqueueRxString = function (text) {
         this.rx.push(text.charCodeAt(i) & 0xff);
 };
 
+Uart.prototype.writeString = function (text) {
+    for (var i = 0; i < text.length; ++i)
+        this.writeData(text.charCodeAt(i));
+};
+
 Uart.prototype.txString = function () {
     return Buffer.from(this.tx).toString('latin1');
+};
+
+Uart.prototype.consumeTxString = function () {
+    var text = this.txString();
+    this.tx = [];
+    return text;
 };
 
 module.exports = Uart;
