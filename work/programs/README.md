@@ -35,6 +35,12 @@ Programs:
   - prints labeled 32-bit hex values
   - demonstrates the higher-level `puts_hex32` helper
   - returns to the monitor
+- `echo_line.bin`
+  - polling input proof
+  - prints a prompt
+  - reads one line from UART RX
+  - echoes it back
+  - returns to the monitor
 
 Shared helper layer:
 
@@ -44,6 +50,10 @@ Shared helper layer:
   - `newline`
   - `puthex32`
   - `puts_hex32`
+- `work/programs/lib/input.inc`
+  - `getc`
+  - `put_prompt`
+  - `readline`
 
 Role split:
 
@@ -77,5 +87,8 @@ load 00090000 print_pi16.bin
 g 00090000
 
 load 00090000 print_status.bin
+g 00090000
+
+load 00090000 echo_line.bin
 g 00090000
 ```

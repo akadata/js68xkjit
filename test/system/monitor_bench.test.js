@@ -8,31 +8,9 @@ var Intc = require('../../src/machine/devices/intc');
 var Timer = require('../../src/machine/devices/timer');
 var assemble = require('./support/assemble_m68k');
 
-function bootMonitorWithTimer() {
-    var machine = new TestMachine({
-        rom: assemble.assembleToBinary(path.join(__dirname, '../../rom/monitor.S')),
-        chipRamSize: 0x00200000,
-        fastRamSize: 0x00400000,
-        overlay: true,
-        cpuType: '68000'
-    });
-    var uart = new Uart();
-    var intc = new Intc();
-    var timer = new Timer({ irqLevel: 2, defaultReload: 10 });
+var cpuType = process.env.J68_CPU_TYPE || '68000';
 
-    machine.mapDevice(uart.region());
-    machine.attachIntc(intc);
-    machine.attachTimer(timer);
-    machine.attachMonitor(uart);
-    machine.reset();
-    machine.runBlocks(1);
-
-    return {
-        machine: machine,
-        uart: uart,
-        timer: timer
-    };
-}
+var bootMonitorWithTimer = require('./support/boot_machine').bootMonitorWithTimer;
 
 (function testBenchmarkCommandReportsSaneOutput() {
     var state = bootMonitorWithTimer();

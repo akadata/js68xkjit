@@ -507,6 +507,20 @@ function startAssembler(machine, valueText) {
 function runProgram(machine, valueText, budget) {
     var target = parseAddress(valueText);
     var limit = budget === undefined ? 50000 : budget | 0;
+    if (machine.asyncMonitorRun) {
+        limit = budget === undefined ? (machine.asyncRunDefaultBudget | 0) : limit;
+        machine.clearFault();
+        machine.cpu.context.pc = target >>> 0;
+        machine.cpu.context.halt = false;
+        machine.monitorSuppressEnterPrompt = false;
+        machine.pendingRun = {
+            limit: limit,
+            beforeInstructions: machine.cpu.context.i >>> 0
+        };
+        if (machine.monitor)
+            machine.monitor.active = false;
+        return { output: '', suppressPrompt: true };
+    }
     var beforeInstructions = machine.cpu.context.i >>> 0;
     machine.clearFault();
     machine.cpu.context.pc = target >>> 0;
@@ -618,7 +632,7 @@ function execute(machine, line) {
         if (/^bench\s+/i.test(trimmed))
             return runBenchmark(machine, trimmed.replace(/^bench\s+/i, ''));
         if (/^gl\s+/i.test(trimmed))
-            return runProgram(machine, trimmed.replace(/^gl\s+/i, ''), 500000);
+            return runProgram(machine, trimmed.replace(/^gl\s+/i, ''), machine.asyncMonitorRun ? machine.asyncRunLongBudget : 500000);
         if (/^g\s+/i.test(trimmed))
             return runProgram(machine, trimmed.replace(/^g\s+/i, ''));
         if (trimmed.toLowerCase() === 't')

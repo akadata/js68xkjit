@@ -53,11 +53,19 @@ function resolveCpuType(cpuType) {
     throw new RangeError('unsupported CPU type: ' + cpuType);
 }
 
+function parseSizeOption(value, envName, fallback) {
+    if (value !== undefined)
+        return value >>> 0;
+    if (!process.env[envName])
+        return fallback >>> 0;
+    return parseInt(process.env[envName], 0) >>> 0;
+}
+
 function TestMachine(options) {
     options = options || {};
 
-    this.chipRamSize = options.chipRamSize === undefined ? memoryMap.CHIP_RAM_MAX_SIZE : options.chipRamSize >>> 0;
-    this.fastRamSize = options.fastRamSize === undefined ? memoryMap.FAST_RAM_MAX_SIZE : options.fastRamSize >>> 0;
+    this.chipRamSize = parseSizeOption(options.chipRamSize, 'J68_CHIP_RAM_SIZE', memoryMap.CHIP_RAM_MAX_SIZE);
+    this.fastRamSize = parseSizeOption(options.fastRamSize, 'J68_FAST_RAM_SIZE', memoryMap.FAST_RAM_MAX_SIZE);
     if (this.chipRamSize > memoryMap.CHIP_RAM_MAX_SIZE)
         throw new RangeError('chip RAM exceeds Amiga 24-bit chip RAM window');
     if (this.fastRamSize > memoryMap.FAST_RAM_MAX_SIZE)
@@ -82,6 +90,10 @@ function TestMachine(options) {
     this.monitor = null;
     this.monitorTrapHandler = null;
     this.lastFault = null;
+    this.pendingRun = null;
+    this.asyncMonitorRun = false;
+    this.asyncRunDefaultBudget = 5000000;
+    this.asyncRunLongBudget = 50000000;
     this.intc = null;
     this.timers = [];
     this.nominalCpuHz = options.nominalCpuHz === undefined ? 1000000 : options.nominalCpuHz >>> 0;
@@ -263,6 +275,7 @@ TestMachine.prototype.setOverlay = function (enabled) {
 TestMachine.prototype.reset = function () {
     var context = this.cpu.context;
     this.bus.reset();
+    this.pendingRun = null;
     context.c = {};
     context.halt = false;
     context.i = 0;

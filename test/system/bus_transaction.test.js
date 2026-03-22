@@ -5,9 +5,10 @@ var Bus = require('../../src/machine/bus');
 var TestMachine = require('../../src/machine/test_machine');
 var Intc = require('../../src/machine/devices/intc');
 var memoryMap = require('../../src/machine/memory_map');
+var cpuType = process.env.J68_CPU_TYPE || '68000';
 
 (function testTransactionCarriesFunctionCodeAndKind() {
-    var machine = new TestMachine({ overlay: false });
+    var machine = new TestMachine({ overlay: false, cpuType: cpuType });
 
     machine.cpu.context.setSr(0x2000);
     machine.cpu.context.fetch(memoryMap.ROM_START);
@@ -22,7 +23,7 @@ var memoryMap = require('../../src/machine/memory_map');
 })();
 
 (function testUnmappedAccessProducesBusErrorTransaction() {
-    var machine = new TestMachine();
+    var machine = new TestMachine({ cpuType: cpuType });
     var tx = machine.bus.transact(machine.bus.createTransaction(memoryMap.UART_START, 1, false, {
         fc: Bus.FC_SUPERVISOR_DATA,
         kind: 'read'
@@ -54,7 +55,7 @@ var memoryMap = require('../../src/machine/memory_map');
 })();
 
 (function testHighestActiveIplWins() {
-    var machine = new TestMachine();
+    var machine = new TestMachine({ cpuType: cpuType });
     var intc = new Intc();
 
     machine.attachIntc(intc);

@@ -52,6 +52,8 @@ CommandLoop.prototype.poll = function () {
             }
             if (output !== '')
                 this.write(output + '\r\n');
+            if (!this.active)
+                return;
             if (this.mode && typeof this.mode.prompt === 'function')
                 this.write(this.mode.prompt());
             else if (!suppressPrompt)

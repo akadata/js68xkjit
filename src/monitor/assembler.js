@@ -1,7 +1,4 @@
-var fs = require('fs');
-var os = require('os');
-var path = require('path');
-var childProcess = require('child_process');
+var toolchain = require('../tools/m68k_toolchain');
 
 var ALLOWED = {
     nop: true,
@@ -27,14 +24,6 @@ var ALLOWED = {
     lea: true,
     pea: true
 };
-
-function tool(name) {
-    try {
-        return childProcess.execFileSync('bash', [ '-lc', 'command -v ' + name ], { encoding: 'utf8' }).trim();
-    } catch (error) {
-        return '';
-    }
-}
 
 function hex(value, width) {
     return (Array(width + 1).join('0') + ((value >>> 0).toString(16).toUpperCase())).slice(-width);
@@ -294,35 +283,15 @@ function parseDcDirective(line) {
 }
 
 function assembleSource(address, line) {
-    var assembler = tool('m68k-linux-gnu-as');
-    var objcopy = tool('m68k-linux-gnu-objcopy');
-    var tempDir;
-    var sourceFile;
-    var objectFile;
-    var binaryFile;
     var source;
-
-    if (!assembler || !objcopy)
-        throw new Error('m68k-linux-gnu-as/objcopy are required');
-
-    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'j68-asm-'));
-    sourceFile = path.join(tempDir, 'line.s');
-    objectFile = path.join(tempDir, 'line.o');
-    binaryFile = path.join(tempDir, 'line.bin');
 
     source = '    .text\n' +
         normalizeSyntax(branchTargetExpression(address, line)) + '\n';
-
-    fs.writeFileSync(sourceFile, source);
-    try {
-        childProcess.execFileSync(assembler, [ '-m68000', '-o', objectFile, sourceFile ], { stdio: 'pipe' });
-    } catch (error) {
-        var stderr = String(error.stderr || '').split('\n').filter(Boolean);
-        var summary = stderr.length === 0 ? error.message : stderr[stderr.length - 1];
-        throw new Error(summary.replace(/^.*Error:\s*/, ''));
-    }
-    childProcess.execFileSync(objcopy, [ '-O', 'binary', objectFile, binaryFile ], { stdio: 'pipe' });
-    return new Uint8Array(fs.readFileSync(binaryFile));
+    return toolchain.assembleSourceText(
+        source,
+        process.env.J68_CPU_TYPE || '68000',
+        'm68k assembler/objcopy are required'
+    );
 }
 
 function assembleLine(address, line) {

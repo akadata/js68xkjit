@@ -2,25 +2,26 @@
 
 var assert = require('assert');
 var path = require('path');
-var TestMachine = require('../../src/machine/test_machine');
-var Intc = require('../../src/machine/devices/intc');
-var Timer = require('../../src/machine/devices/timer');
 var assemble = require('./support/assemble_m68k');
 
+var cpuType = process.env.J68_CPU_TYPE || '68000';
+var bootMachine = require('./support/boot_machine').bootMachine;
+
 (function testTimerRaisesIrq2AndRteReturnsCleanly() {
-    var machine = new TestMachine({
-        rom: assemble.assembleToBinary(path.join(__dirname, '../../rom/timer_irq.S')),
-        chipRamSize: 0x00200000,
-        fastRamSize: 0x00400000,
-        overlay: true,
-        cpuType: '68000'
+    var state = bootMachine({
+        rom: assemble.assembleToBinary(path.join(__dirname, '../../rom/timer_irq.S'), cpuType),
+        uart: false,
+        monitor: false,
+        intc: true,
+        timer: true,
+        timerOptions: { irqLevel: 2, defaultReload: 1000 },
+        bootBlocks: 0,
+        cpuType: cpuType
     });
-    var intc = new Intc();
-    var timer = new Timer({ irqLevel: 2, defaultReload: 1000 });
+    var machine = state.machine;
+    var intc = state.intc;
+    var timer = state.timer;
     var tickAddress = 0x00090000;
-    machine.attachIntc(intc);
-    machine.attachTimer(timer);
-    machine.reset();
 
     var reached = machine.runUntil(function (m) {
         return m.cpu.context.l32(tickAddress) >= 2;

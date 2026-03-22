@@ -1,5 +1,6 @@
 #!/usr/bin/env node
 
+
 var path = require('path');
 var TestMachine = require('../src/machine/test_machine');
 var Uart = require('../src/machine/devices/uart');
@@ -8,6 +9,9 @@ var Timer = require('../src/machine/devices/timer');
 var assemble = require('./support/assemble_m68k');
 var monitorCommands = require('../src/monitor/commands');
 
+var cpuType = process.env.J68_CPU_TYPE || '68000';
+
+
 function decodeScript(text) {
     return String(text || '')
         .replace(/\\r/g, '\r')
@@ -15,14 +19,12 @@ function decodeScript(text) {
         .replace(/\\t/g, '\t');
 }
 
-function buildMachine() {
-    var rom = assemble.assembleToBinary(path.join(__dirname, '../rom/monitor.S'));
+function buildMachine(cpuType) {
+    var rom = assemble.assembleToBinary(path.join(__dirname, '../rom/monitor.S'), cpuType);
     var machine = new TestMachine({
         rom: rom,
-        chipRamSize: 0x00200000,
-        fastRamSize: 0x00400000,
         overlay: true,
-        cpuType: '68000'
+        cpuType: cpuType
     });
     var uart = new Uart();
     var intc = new Intc();
@@ -32,6 +34,7 @@ function buildMachine() {
     machine.attachIntc(intc);
     machine.attachTimer(timer);
     machine.attachMonitor(uart);
+    machine.asyncMonitorRun = true;
     machine.reset();
 
     return {
@@ -41,7 +44,7 @@ function buildMachine() {
 }
 
 function main() {
-    var state = buildMachine();
+    var state = buildMachine(cpuType);
     var machine = state.machine;
     var uart = state.uart;
     var script = decodeScript(process.env.J68_MONITOR_SCRIPT || '');
@@ -85,10 +88,26 @@ function main() {
     var loop = setInterval(function () {
         if (machine.monitor && machine.monitor.active)
             machine.pollMonitor();
+        else if (machine.pendingRun)
+            machine.runUntilInstruction(function (m) { return m.cpu.context.halt; }, 1000);
         else
             machine.runBlocks(1000);
 
+        if (machine.pendingRun) {
+            var executedInstructions = (machine.cpu.context.i - machine.pendingRun.beforeInstructions) >>> 0;
+            if (machine.monitor && machine.monitor.active) {
+                machine.pendingRun = null;
+            } else if (executedInstructions >= machine.pendingRun.limit) {
+                machine.pendingRun = null;
+                machine.cpu.context.halt = true;
+                uart.writeString('\r\nRUN LIMIT PC=' + monitorCommands.hex(machine.cpu.context.pc, 8) + ' INS=' + executedInstructions + '\n');
+                if (machine.monitor)
+                    machine.monitor.enter();
+            }
+        }
+
         if (machine.lastFault && machine.monitor && !machine.monitor.active) {
+            machine.pendingRun = null;
             uart.writeString(monitorCommands.formatFault(machine) + '\n');
             machine.monitor.enter();
             machine.clearFault();

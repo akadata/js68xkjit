@@ -46,6 +46,7 @@ Recommended next order:
    - `getc`
    - prompt helper
    - simple line read
+   - start with polling against UART status/data
 2. one interactive demo binary
    - `echo_line.bin`
 3. only after input is solid:
@@ -53,6 +54,14 @@ Recommended next order:
 
 Cooperative multitasking remains on the roadmap, but it should come after the
 input-side helper layer so the machine has a usable conversational path first.
+Interrupt-driven input should come after the first polling-based input path is
+proven.
+
+Immediate acceptance for the next block:
+
+- reusable guest-side input helper layer exists in `work/programs/lib/`
+- `echo_line.bin` prompts, reads a line through UART RX, echoes it back, and returns
+- focused system test proves visible input/output behavior
 
 ## Current Architectural Gap
 
@@ -63,6 +72,17 @@ The most important missing semantics are:
 - `FC[2:0]`
 - `IPL[2:0]`
 - `BERR`
+
+Near-term impact:
+
+- `FC[2:0]`
+  - useful for fuller machine fidelity
+  - not blocking the first polling-based input path
+- `IPL[2:0]`
+  - should be exposed more cleanly before interrupt-driven input work
+- `BERR`
+  - important for machine fault semantics
+  - not blocking the first happy-path input helpers
 
 Related lower-priority concepts that should remain deferred until needed:
 
@@ -107,6 +127,10 @@ The bus must distinguish at least:
 2. Expose resolved current IPL cleanly.
 3. Add machine-visible `BERR` result path.
 4. Leave timing and handshake details for later.
+
+For the next implementation block, input may start in polling mode without
+waiting for more IPL work. The IPL exposure work becomes more important when
+moving from polling input to interrupt-driven input.
 
 ## Acceptance For This Slice
 

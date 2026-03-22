@@ -7,28 +7,13 @@ var TestMachine = require('../../src/machine/test_machine');
 var Uart = require('../../src/machine/devices/uart');
 var assemble = require('./support/assemble_m68k');
 
+var cpuType = process.env.J68_CPU_TYPE || '68000';
+
 var sourceDir = path.resolve(__dirname, '../../source');
 var sourceFile = path.join(sourceDir, 'saved_count10.asm');
 var helloFile = path.join(sourceDir, 'saved_helloworld.asm');
 
-function bootMonitorMachine() {
-    var machine = new TestMachine({
-        rom: assemble.assembleToBinary(path.join(__dirname, '../../rom/monitor.S')),
-        chipRamSize: 0x00200000,
-        fastRamSize: 0x00400000,
-        overlay: true,
-        cpuType: '68000'
-    });
-    var uart = new Uart();
-    machine.mapDevice(uart);
-    machine.attachMonitor(uart);
-    machine.reset();
-    machine.runBlocks(1);
-    return {
-        machine: machine,
-        uart: uart
-    };
-}
+var bootMonitorMachine = require('./support/boot_machine').bootMonitorMachine;
 
 (function testSaveAsmRoundTrip() {
     var state = bootMonitorMachine();

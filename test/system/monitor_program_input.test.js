@@ -10,14 +10,18 @@ var cpuType = process.env.J68_CPU_TYPE || '68000';
 
 var bootMonitorMachine = require('./support/boot_machine').bootMonitorMachine;
 
-(function testFixedPointFormatting() {
+(function testEchoLineBinary() {
     var state = bootMonitorMachine();
     state.uart.consumeTxString();
-    state.machine.cpu.context.d[0] = 0x0003243C;
-    state.uart.enqueueRxString('fx d0\r');
+    state.uart.enqueueRxString(
+        'load 00090000 echo_line.bin\r' +
+        'g 00090000\r' +
+        'hello world\r'
+    );
     state.machine.pollMonitor();
     var output = state.uart.txString();
-    assert.equal(output.indexOf('D0 = 0003243C = 3.14154 (16.16)') !== -1, true, 'fx did not render 16.16 output');
+    assert.equal(output.indexOf('INPUT> hello world\r\n') !== -1, true, 'echo_line.bin did not prompt and echo typed input');
+    assert.equal(output.indexOf('ECHO: hello world\r\n') !== -1, true, 'echo_line.bin did not print echoed line');
 })();
 
-console.log('monitor_fx.test.js: ok');
+console.log('monitor_program_input.test.js: ok');

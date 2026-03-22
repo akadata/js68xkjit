@@ -5,8 +5,10 @@ var TestMachine = require('../../src/machine/test_machine');
 var Video = require('../../src/machine/devices/video');
 var memoryMap = require('../../src/machine/memory_map');
 
+var cpuType = process.env.J68_CPU_TYPE || '68000';
+
 (function testVideoDeviceAttachesThroughBusWithoutMachineSpecificGlue() {
-    var machine = new TestMachine();
+    var machine = new TestMachine({ cpuType: cpuType });
     var video = new Video({ columns: 8, rows: 2 });
 
     machine.mapDevice(video);
