@@ -1,7 +1,15 @@
 main:
-    nop
-    neg.l d0
+    move.l #1, %d0
+    neg.l %d0
+    move %ccr, %d1
+    move.l %d0, %d3
+    moveq #0, %d0
+    neg.l %d0
+    move %ccr, %d2
 check:
     .dc.l 0xffffffff
-    .dc.l 0xd0, 0
+    .dc.l 0xd0, 0x00000000
+    .dc.l 0xd1, 0x00000019
+    .dc.l 0xd2, 0x00000004
+    .dc.l 0xd3, 0xffffffff
     .dc.l 0

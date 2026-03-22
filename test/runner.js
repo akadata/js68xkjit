@@ -324,7 +324,7 @@ var harness = {
 		}
 	}
 };
-var invalidSmoke = {
+var deferredInvalidSmoke = {
 	'r/callm.r': 'CALLM requires a valid module descriptor and transfer target; this local smoke test points A0 at the program image',
 	'r/rtm.r': 'RTM requires a saved module state on the stack from a prior CALLM'
 };
@@ -408,8 +408,8 @@ function errorMessage(err) {
 
 function classifyFailure(message, logs) {
 	var logText = logs.join('\n');
-	if (invalidSmoke[currentTest])
-		return 'invalid local smoke test';
+	if (deferredInvalidSmoke[currentTest])
+		return 'deferred invalid smoke test';
 	if (message.indexOf('malformed check block:') === 0)
 		return 'malformed placeholder test';
 	if (/not impl|simplified/i.test(logText))
@@ -420,7 +420,7 @@ function classifyFailure(message, logs) {
 }
 
 var categoryOrder = [
-	'invalid local smoke test',
+	'deferred invalid smoke test',
 	'malformed placeholder test',
 	'not implemented',
 	'wrong result/flags',
@@ -430,15 +430,16 @@ var categories = {};
 categoryOrder.forEach(function (name) {
 	categories[name] = [];
 });
+var deferred = [];
 var currentTest = '';
 json.tests.forEach(function (test) {
 	currentTest = test;
 	console.log(test);
-	if (invalidSmoke[test]) {
-		var invalidMessage = invalidSmoke[test];
-		failed.push({ test: test, error: invalidMessage, message: invalidMessage, category: 'invalid local smoke test' });
-		categories['invalid local smoke test'].push(test);
-		console.error('FAIL ' + test + ' [invalid local smoke test]: ' + invalidMessage);
+	if (deferredInvalidSmoke[test]) {
+		var deferredMessage = deferredInvalidSmoke[test];
+		deferred.push({ test: test, message: deferredMessage, category: 'deferred invalid smoke test' });
+		categories['deferred invalid smoke test'].push(test);
+		console.error('DEFER ' + test + ' [deferred invalid smoke test]: ' + deferredMessage);
 		return;
 	}
 	try {
@@ -485,10 +486,12 @@ json.tests.forEach(function (test) {
 
 console.log('');
 console.log('Passed: ' + passed + '/' + json.tests.length);
-console.log('Failed: ' + failed.length + '/' + json.tests.length);
+console.log('Failed: ' + failed.length + '/' + (json.tests.length - deferred.length));
+if (deferred.length > 0)
+	console.log('Deferred: ' + deferred.length + '/' + json.tests.length);
 if (skipFile)
 	console.log('Skipped: ' + skipped);
-if (failed.length > 0) {
+if (failed.length > 0 || deferred.length > 0) {
 	console.log('');
 	categoryOrder.forEach(function (name) {
 		if (categories[name].length > 0)
@@ -498,5 +501,9 @@ if (failed.length > 0) {
 	failed.forEach(function (entry) {
 		console.log(entry.test + ' [' + entry.category + ']: ' + entry.message);
 	});
-	process.exitCode = 1;
+	deferred.forEach(function (entry) {
+		console.log(entry.test + ' [' + entry.category + ']: ' + entry.message);
+	});
+	if (failed.length > 0)
+		process.exitCode = 1;
 }

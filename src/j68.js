@@ -881,14 +881,34 @@ exports.j68 = (function () {
         
         // Check for NEGX (01000000ssmmmrrr)
         if ((inst & 0xff00) === 0x4000) {
-            // Simplified - doesn't handle X flag properly
             var size = (inst >> 6) & 3;
             if (size !== 3) {
-                this.log('NEGX simplified');
                 var sizeBytes = size === 0 ? 1 : size === 1 ? 2 : 4;
+                var sizeMask = size === 0 ? '0xff' : size === 1 ? '0xffff' : '0xffffffff';
+                var highBit = size === 0 ? '0x80' : size === 1 ? '0x8000' : '0x80000000';
+                var negxEa = this.effectiveAddress(
+                    pc, inst,
+                    function (ea) {
+                        return 'var oldZ=c.cz;var dst=(' + ea + ')&' + sizeMask + ';var x=(c.cx?1:0);var srcx=(dst+x)&' + sizeMask + ';var ext=dst+x;var res=(0-ext)&' + sizeMask + ';' + ea + '=res;';
+                    },
+                    function (ea) {
+                        if (sizeBytes === 1) return 'var oldZ=c.cz;var dst=c.l8(' + ea + ');var x=(c.cx?1:0);var srcx=(dst+x)&0xff;var ext=dst+x;var res=(0-ext)&0xff;c.s8(' + ea + ',res);';
+                        if (sizeBytes === 2) return 'var oldZ=c.cz;var dst=c.l16(' + ea + ');var x=(c.cx?1:0);var srcx=(dst+x)&0xffff;var ext=dst+x;var res=(0-ext)&0xffff;c.s16(' + ea + ',res);';
+                        return 'var oldZ=c.cz;var dst=c.l32(' + ea + ');var x=(c.cx?1:0);var srcx=(dst+x)>>>0;var ext=(dst>>>0)+x;var res=(0-ext)>>>0;c.s32(' + ea + ',res>>>0);';
+                    },
+                    sizeBytes
+                );
                 return {
-                    'code': ['/* NEGX not fully implemented */'],
-                    'pc': pc + 2
+                    'in': { 'x': true, 'z': true },
+                    'code': [negxEa.code],
+                    'out': {
+                        'x': '(ext!==0)',
+                        'n': '((res&' + highBit + ')!=0)',
+                        'z': '(oldZ&&((res&' + sizeMask + ')==0))',
+                        'v': '(((0&' + highBit + ')!=(srcx&' + highBit + '))&&((res&' + highBit + ')!=(0&' + highBit + ')))',
+                        'c': '(ext!==0)'
+                    },
+                    'pc': negxEa.pc
                 };
             }
         }
@@ -1444,7 +1464,11 @@ exports.j68 = (function () {
                     'v': 'c.t[0]&2',
                     'c': false
                 };
-                break;
+                return {
+                    'code': code,
+                    'out': out,
+                    'pc': ea.pc
+                };
             case 7:  // DIVS
                 ea = this.effectiveAddress(
                         pc, inst,
@@ -1458,71 +1482,119 @@ exports.j68 = (function () {
                     'v': 'c.t[0]&2',
                     'c': false
                 };
+                return {
+                    'code': code,
+                    'out': out,
+                    'pc': ea.pc
+                };
+            case 4:  // SBCD is handled above, otherwise OR.b Dn,<ea>
                 break;
-            case 4:  // SBCD is handled above
-                this.log('line 8 internal fallthrough on SBCD');
-                throw console.assert(false);
-            case 5:  // PACK
-                var packAdj = this.context.fetch(pc + 2);
-                if ((inst & 0x8) !== 0) {
-                    var packSrc = inst & 7;
-                    var packDst = r;
+            case 5:  // PACK or OR.w Dn,<ea>
+                if ((inst & 0xf1f0) === 0x8140 || (inst & 0xf1f0) === 0x8148) {
+                    var packAdj = this.context.fetch(pc + 2);
+                    if ((inst & 0x8) !== 0) {
+                        var packSrc = inst & 7;
+                        var packDst = r;
+                        return {
+                            'code': [
+                                'c.a[' + packSrc + ']-=2;',
+                                'c.a[' + packDst + ']-=1;',
+                                'var src=((c.l8(c.a[' + packSrc + '])&0x0f)<<8)|(c.l8(c.a[' + packSrc + ']+1)&0x0f);',
+                                'var tmp=(src+' + this.extS16U32(packAdj) + ')&0xffff;',
+                                'var result=((tmp>>8)&0xf0)|(tmp&0x0f);',
+                                'c.s8(c.a[' + packDst + '],result);'
+                            ],
+                            'pc': pc + 4
+                        };
+                    }
                     return {
                         'code': [
-                            'c.a[' + packSrc + ']-=2;',
-                            'c.a[' + packDst + ']-=1;',
-                            'var src=((c.l8(c.a[' + packSrc + '])&0x0f)<<8)|(c.l8(c.a[' + packSrc + ']+1)&0x0f);',
+                            'var src=c.d[' + (inst & 7) + ']&0xffff;',
                             'var tmp=(src+' + this.extS16U32(packAdj) + ')&0xffff;',
                             'var result=((tmp>>8)&0xf0)|(tmp&0x0f);',
-                            'c.s8(c.a[' + packDst + '],result);'
+                            'c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|result;'
                         ],
                         'pc': pc + 4
                     };
                 }
-                return {
-                    'code': [
-                        'var src=c.d[' + (inst & 7) + ']&0xffff;',
-                        'var tmp=(src+' + this.extS16U32(packAdj) + ')&0xffff;',
-                        'var result=((tmp>>8)&0xf0)|(tmp&0x0f);',
-                        'c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|result;'
-                    ],
-                    'pc': pc + 4
-                };
-            case 6:  // UNPK
-                var unpkAdj = this.context.fetch(pc + 2);
-                if ((inst & 0x8) !== 0) {
-                    var unpkSrc = inst & 7;
-                    var unpkDst = r;
+                break;
+            case 6:  // UNPK or OR.l Dn,<ea>
+                if ((inst & 0xf1f0) === 0x8180 || (inst & 0xf1f0) === 0x8188) {
+                    var unpkAdj = this.context.fetch(pc + 2);
+                    if ((inst & 0x8) !== 0) {
+                        var unpkSrc = inst & 7;
+                        var unpkDst = r;
+                        return {
+                            'code': [
+                                'c.a[' + unpkSrc + ']-=1;',
+                                'c.a[' + unpkDst + ']-=2;',
+                                'var src=c.l8(c.a[' + unpkSrc + ']);',
+                                'var tmp=((((src&0xf0)<<4)|(src&0x0f))+' + this.extS16U32(unpkAdj) + ')&0xffff;',
+                                'c.s8(c.a[' + unpkDst + '],(tmp>>8)&0xff);',
+                                'c.s8(c.a[' + unpkDst + ']+1,tmp&0xff);'
+                            ],
+                            'pc': pc + 4
+                        };
+                    }
                     return {
                         'code': [
-                            'c.a[' + unpkSrc + ']-=1;',
-                            'c.a[' + unpkDst + ']-=2;',
-                            'var src=c.l8(c.a[' + unpkSrc + ']);',
+                            'var src=c.d[' + (inst & 7) + ']&0xff;',
                             'var tmp=((((src&0xf0)<<4)|(src&0x0f))+' + this.extS16U32(unpkAdj) + ')&0xffff;',
-                            'c.s8(c.a[' + unpkDst + '],(tmp>>8)&0xff);',
-                            'c.s8(c.a[' + unpkDst + ']+1,tmp&0xff);'
+                            'c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|tmp;'
                         ],
                         'pc': pc + 4
                     };
                 }
-                return {
-                    'code': [
-                        'var src=c.d[' + (inst & 7) + ']&0xff;',
-                        'var tmp=((((src&0xf0)<<4)|(src&0x0f))+' + this.extS16U32(unpkAdj) + ')&0xffff;',
-                        'c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|tmp;'
-                    ],
-                    'pc': pc + 4
-                };
-            default:
-                // TODO: Implement.
-                this.log('line 9 not impl opmode: ' + opmode);
-                throw console.assert(false);
+                break;
         }
-        return {
-            'code': code,
-            'out': out,
-            'pc': ea.pc
-        };
+        if (opmode <= 2 || (opmode >= 4 && opmode <= 6)) {
+            var logicSize = opmode === 0 || opmode === 4 ? 1 : opmode === 1 || opmode === 5 ? 2 : 4;
+            var logicMask = logicSize === 1 ? '0xff' : logicSize === 2 ? '0xffff' : '0xffffffff';
+            var logicHighBit = logicSize === 1 ? '0x80' : logicSize === 2 ? '0x8000' : '0x80000000';
+            var logicKeepMask = logicSize === 1 ? '0xffffff00' : logicSize === 2 ? '0xffff0000' : '0x0';
+            if (opmode <= 2) {  // OR <ea>,Dn
+                ea = this.effectiveAddress(
+                    pc, inst,
+                    function (srcEa) {
+                        if (logicSize === 4)
+                            return 'var src=(' + srcEa + ')>>>0;var dst=c.d[' + r + ']>>>0;var res=(dst|src)>>>0;c.d[' + r + ']=res>>>0;';
+                        return 'var src=(' + srcEa + ')&' + logicMask + ';var dst=c.d[' + r + ']&' + logicMask + ';var res=(dst|src)&' + logicMask + ';c.d[' + r + ']=(c.d[' + r + ']&' + logicKeepMask + ')|res;';
+                    },
+                    function (srcEa) {
+                        if (logicSize === 1) return 'var src=c.l8(' + srcEa + ');var dst=c.d[' + r + ']&0xff;var res=(dst|src)&0xff;c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|res;';
+                        if (logicSize === 2) return 'var src=c.l16(' + srcEa + ');var dst=c.d[' + r + ']&0xffff;var res=(dst|src)&0xffff;c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|res;';
+                        return 'var src=c.l32(' + srcEa + ');var dst=c.d[' + r + ']>>>0;var res=(dst|src)>>>0;c.d[' + r + ']=res>>>0;';
+                    },
+                    logicSize
+                );
+                return {
+                    'code': [ea.code],
+                    'out': { 'n': '((res&' + logicHighBit + ')!=0)', 'z': '((res&' + logicMask + ')==0)', 'v': '0', 'c': '0' },
+                    'pc': ea.pc
+                };
+            }
+            var orDst = this.effectiveAddressDst(
+                pc + 2, (inst >> 3) & 7, inst & 7,
+                function (dstEa) {
+                    if (logicSize === 4)
+                        return 'var src=c.d[' + r + ']>>>0;var dst=(' + dstEa + ')>>>0;var res=(dst|src)>>>0;' + dstEa + '=res>>>0;';
+                    return 'var src=c.d[' + r + ']&' + logicMask + ';var dst=(' + dstEa + ')&' + logicMask + ';var res=(dst|src)&' + logicMask + ';' + dstEa + '=((' + dstEa + ')&' + logicKeepMask + ')|res;';
+                },
+                function (dstEa) {
+                    if (logicSize === 1) return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst|src)&0xff;c.s8(' + dstEa + ',res);';
+                    if (logicSize === 2) return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst|src)&0xffff;c.s16(' + dstEa + ',res);';
+                    return 'var src=c.d[' + r + ']>>>0;var dst=c.l32(' + dstEa + ');var res=(dst|src)>>>0;c.s32(' + dstEa + ',res>>>0);';
+                },
+                logicSize
+            );
+            return {
+                'code': [orDst.code],
+                'out': { 'n': '((res&' + logicHighBit + ')!=0)', 'z': '((res&' + logicMask + ')==0)', 'v': '0', 'c': '0' },
+                'pc': orDst.pc
+            };
+        }
+        this.log('line 8 not impl opmode: ' + opmode);
+        throw console.assert(false);
     };
 
     j68.prototype.decode9 = function (pc, inst) {
@@ -2401,48 +2473,60 @@ exports.j68 = (function () {
             };
         }
         
-        // ANDI/ORI/EORI to Dn
-        // ANDI: 00000010ss000ddd, ORI: 00000000ss000ddd, EORI: 00001010ss000ddd
-        if ((inst & 0x3f) === 0x00) {  // EA mode 0 = Dn
-            var dstReg = inst & 7;
-            var immData = this.context.fetch(pc + 2);
-            
-            // Determine size from bits 6-7
-            var size = 1;
-            var sizeMask = '0xff';
-            var highBit = '0x80';
-            var sizeBits = (inst >> 6) & 3;
-            if (sizeBits === 1) { size = 2; sizeMask = '0xffff'; highBit = '0x8000'; }
-            if (sizeBits === 2) { size = 4; sizeMask = '0xffffffff'; highBit = '0x80000000'; }
-            
-            // ANDI (00000010xxxxxx)
-            if ((inst & 0xf000) === 0x0000 && (inst & 0x0f00) === 0x0200) {
-                var size = 1;
-                var sizeMask = '0xff';
-                var highBit = '0x80';
-                if ((inst & 0x0100) !== 0) { size = 2; sizeMask = '0xffff'; highBit = '0x8000'; }
-                if ((inst & 0x1000) !== 0) { size = 4; sizeMask = '0xffffffff'; highBit = '0x80000000'; }
-                return {
-                    'code': ['c.d[' + dstReg + ']=(c.d[' + dstReg + ']&' + immData + ')&' + sizeMask + ';'],
-                    'out': { 'n': '((c.d[' + dstReg + ']&' + highBit + ')!=0)', 'z': '((c.d[' + dstReg + ']&' + sizeMask + ')==0)', 'v': '0', 'c': '0' },
-                    'pc': pc + 4
-                };
-            }
-            // ORI (00000000xxxxxx)
-            if ((inst & 0xf000) === 0x0000 && (inst & 0x0f00) === 0x0000) {
-                return {
-                    'code': ['c.d[' + dstReg + ']=(c.d[' + dstReg + ']|' + immData + ')&' + sizeMask + ';'],
-                    'out': { 'n': '((c.d[' + dstReg + ']&' + highBit + ')!=0)', 'z': '((c.d[' + dstReg + ']&' + sizeMask + ')==0)', 'v': '0', 'c': '0' },
-                    'pc': pc + 4
-                };
-            }
-            // EORI (00001010xxxxxx)
-            if ((inst & 0xf000) === 0x0000 && (inst & 0x0f00) === 0x0a00) {
-                return {
-                    'code': ['c.d[' + dstReg + ']=(c.d[' + dstReg + ']^' + immData + ')&' + sizeMask + ';'],
-                    'out': { 'n': '((c.d[' + dstReg + ']&' + highBit + ')!=0)', 'z': '((c.d[' + dstReg + ']&' + sizeMask + ')==0)', 'v': '0', 'c': '0' },
-                    'pc': pc + 4
-                };
+        // ANDI/ORI/EORI to EA
+        // ANDI: 00000010ssmmmrrr, ORI: 00000000ssmmmrrr, EORI: 00001010ssmmmrrr
+        var immOp = inst & 0xff00;
+        if (immOp === 0x0000 || immOp === 0x0200 || immOp === 0x0a00) {
+            var immSizeBits = (inst >> 6) & 3;
+            if (immSizeBits !== 3) {
+                var immSize = 1;
+                var immMask = '0xff';
+                var immHighBit = '0x80';
+                var immKeepMask = '0xffffff00';
+                var immValue = this.context.fetch(pc + 2) & 0xff;
+                var immExpr = '' + immValue;
+                var immNextPc = pc + 4;
+                if (immSizeBits === 1) {
+                    immSize = 2;
+                    immMask = '0xffff';
+                    immHighBit = '0x8000';
+                    immKeepMask = '0xffff0000';
+                    immValue = this.context.fetch(pc + 2) & 0xffff;
+                    immExpr = '' + immValue;
+                } else if (immSizeBits === 2) {
+                    immSize = 4;
+                    immMask = '0xffffffff';
+                    immHighBit = '0x80000000';
+                    immKeepMask = '0x0';
+                    immValue = this.context.l32(pc + 2) >>> 0;
+                    immExpr = '' + immValue;
+                    immNextPc = pc + 6;
+                }
+                var logicExpr = immOp === 0x0200 ? '(dst&imm)' : immOp === 0x0000 ? '(dst|imm)' : '(dst^imm)';
+                var dstMode = (inst >> 3) & 7;
+                if (dstMode !== 1) {
+                    var immDst = this.effectiveAddressDst(
+                        immNextPc, dstMode, inst & 7,
+                        function (ea) {
+                            if (immSize === 4)
+                                return 'var imm=' + immExpr + ';var dst=(' + ea + ')>>>0;var res=(' + logicExpr + ')>>>0;' + ea + '=res>>>0;';
+                            return 'var imm=' + immExpr + ';var dst=(' + ea + ')&' + immMask + ';var res=(' + logicExpr + ')&' + immMask + ';' + ea + '=((' + ea + ')&' + immKeepMask + ')|res;';
+                        },
+                        function (ea) {
+                            if (immSize === 1)
+                                return 'var imm=' + immExpr + ';var dst=c.l8(' + ea + ');var res=(' + logicExpr + ')&0xff;c.s8(' + ea + ',res);';
+                            if (immSize === 2)
+                                return 'var imm=' + immExpr + ';var dst=c.l16(' + ea + ');var res=(' + logicExpr + ')&0xffff;c.s16(' + ea + ',res);';
+                            return 'var imm=' + immExpr + ';var dst=c.l32(' + ea + ');var res=(' + logicExpr + ')>>>0;c.s32(' + ea + ',res>>>0);';
+                        },
+                        immSize
+                    );
+                    return {
+                        'code': [immDst.code],
+                        'out': { 'n': '((res&' + immHighBit + ')!=0)', 'z': '((res&' + immMask + ')==0)', 'v': '0', 'c': '0' },
+                        'pc': immDst.pc
+                    };
+                }
             }
         }
         
@@ -2661,6 +2745,32 @@ exports.j68 = (function () {
                 'pc': pc + 2
             };
         }
+        // EOR Dn,<ea>
+        if (opmode >= 4 && opmode <= 6) {
+            var eorSize = opmode === 4 ? 1 : opmode === 5 ? 2 : 4;
+            var eorMask = eorSize === 1 ? '0xff' : eorSize === 2 ? '0xffff' : '0xffffffff';
+            var eorHighBit = eorSize === 1 ? '0x80' : eorSize === 2 ? '0x8000' : '0x80000000';
+            var eorKeepMask = eorSize === 1 ? '0xffffff00' : eorSize === 2 ? '0xffff0000' : '0x0';
+            var eorDst = this.effectiveAddressDst(
+                pc + 2, (inst >> 3) & 7, inst & 7,
+                function (dstEa) {
+                    if (eorSize === 4)
+                        return 'var src=c.d[' + r + ']>>>0;var dst=(' + dstEa + ')>>>0;var res=(dst^src)>>>0;' + dstEa + '=res>>>0;';
+                    return 'var src=c.d[' + r + ']&' + eorMask + ';var dst=(' + dstEa + ')&' + eorMask + ';var res=(dst^src)&' + eorMask + ';' + dstEa + '=((' + dstEa + ')&' + eorKeepMask + ')|res;';
+                },
+                function (dstEa) {
+                    if (eorSize === 1) return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst^src)&0xff;c.s8(' + dstEa + ',res);';
+                    if (eorSize === 2) return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst^src)&0xffff;c.s16(' + dstEa + ',res);';
+                    return 'var src=c.d[' + r + ']>>>0;var dst=c.l32(' + dstEa + ');var res=(dst^src)>>>0;c.s32(' + dstEa + ',res>>>0);';
+                },
+                eorSize
+            );
+            return {
+                'code': [eorDst.code],
+                'out': { 'n': '((res&' + eorHighBit + ')!=0)', 'z': '((res&' + eorMask + ')==0)', 'v': '0', 'c': '0' },
+                'pc': eorDst.pc
+            };
+        }
         // Default CMP
         this.log('not impl: line=B, opmode=' + opmode.toString(16));
         throw console.assert(false);
@@ -2709,9 +2819,55 @@ exports.j68 = (function () {
         if ((inst & 0xf1f8) === 0xc188) {  // Dn<->Am
             return { 'code': ['var t=c.d[' + r + '];c.d[' + r + ']=c.a[' + r2 + '];c.a[' + r2 + ']=t;'], 'pc': pc + 2 };
         }
-        // ABCD (opmode 4)
-        if (opmode === 4) {
+        // ABCD
+        if ((inst & 0xf1f0) === 0xc100 || (inst & 0xf1f0) === 0xc108) {
             return { 'code': ['/* ABCD */'], 'pc': pc + 2 };
+        }
+        if (opmode <= 2 || (opmode >= 4 && opmode <= 6)) {
+            var andSize = opmode === 0 || opmode === 4 ? 1 : opmode === 1 || opmode === 5 ? 2 : 4;
+            var andMask = andSize === 1 ? '0xff' : andSize === 2 ? '0xffff' : '0xffffffff';
+            var andHighBit = andSize === 1 ? '0x80' : andSize === 2 ? '0x8000' : '0x80000000';
+            var andKeepMask = andSize === 1 ? '0xffffff00' : andSize === 2 ? '0xffff0000' : '0x0';
+            if (opmode <= 2) {  // AND <ea>,Dn
+                var andEa = this.effectiveAddress(
+                    pc, inst,
+                    function (srcEa) {
+                        if (andSize === 4)
+                            return 'var src=(' + srcEa + ')>>>0;var dst=c.d[' + r + ']>>>0;var res=(dst&src)>>>0;c.d[' + r + ']=res>>>0;';
+                        return 'var src=(' + srcEa + ')&' + andMask + ';var dst=c.d[' + r + ']&' + andMask + ';var res=(dst&src)&' + andMask + ';c.d[' + r + ']=(c.d[' + r + ']&' + andKeepMask + ')|res;';
+                    },
+                    function (srcEa) {
+                        if (andSize === 1) return 'var src=c.l8(' + srcEa + ');var dst=c.d[' + r + ']&0xff;var res=(dst&src)&0xff;c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|res;';
+                        if (andSize === 2) return 'var src=c.l16(' + srcEa + ');var dst=c.d[' + r + ']&0xffff;var res=(dst&src)&0xffff;c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|res;';
+                        return 'var src=c.l32(' + srcEa + ');var dst=c.d[' + r + ']>>>0;var res=(dst&src)>>>0;c.d[' + r + ']=res>>>0;';
+                    },
+                    andSize
+                );
+                return {
+                    'code': [andEa.code],
+                    'out': { 'n': '((res&' + andHighBit + ')!=0)', 'z': '((res&' + andMask + ')==0)', 'v': '0', 'c': '0' },
+                    'pc': andEa.pc
+                };
+            }
+            var andDst = this.effectiveAddressDst(
+                pc + 2, (inst >> 3) & 7, inst & 7,
+                function (dstEa) {
+                    if (andSize === 4)
+                        return 'var src=c.d[' + r + ']>>>0;var dst=(' + dstEa + ')>>>0;var res=(dst&src)>>>0;' + dstEa + '=res>>>0;';
+                    return 'var src=c.d[' + r + ']&' + andMask + ';var dst=(' + dstEa + ')&' + andMask + ';var res=(dst&src)&' + andMask + ';' + dstEa + '=((' + dstEa + ')&' + andKeepMask + ')|res;';
+                },
+                function (dstEa) {
+                    if (andSize === 1) return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst&src)&0xff;c.s8(' + dstEa + ',res);';
+                    if (andSize === 2) return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst&src)&0xffff;c.s16(' + dstEa + ',res);';
+                    return 'var src=c.d[' + r + ']>>>0;var dst=c.l32(' + dstEa + ');var res=(dst&src)>>>0;c.s32(' + dstEa + ',res>>>0);';
+                },
+                andSize
+            );
+            return {
+                'code': [andDst.code],
+                'out': { 'n': '((res&' + andHighBit + ')!=0)', 'z': '((res&' + andMask + ')==0)', 'v': '0', 'c': '0' },
+                'pc': andDst.pc
+            };
         }
         // Default AND
         this.log('not impl: line=C, opmode=' + opmode.toString(16));
