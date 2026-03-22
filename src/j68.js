@@ -2965,10 +2965,47 @@ exports.j68 = (function () {
         var count = (inst >> 9) & 7;
         if (count === 0) count = 8;
         
-        // Register shifts only (memory shifts not implemented)
-        if ((inst & 0x20) !== 0) {
-            this.log('not impl: line=E memory shift');
-            throw console.assert(false);
+        // Memory shifts/rotates: one-bit word operation on memory EA.
+        if (((inst >> 6) & 3) === 3) {
+            var memShiftType = (inst >> 8) & 3;
+            var memEa = this.effectiveAddress(
+                pc, inst,
+                function (ea) { return 'throw console.assert(false);'; },
+                function (ea) {
+                    switch (memShiftType) {
+                        case 0:  // ASR
+                            return 'var dst=c.l16(' + ea + ');var carry=((dst&0x0001)!==0);var res=((dst>>1)|(dst&0x8000))&0xffff;c.s16(' + ea + ',res);var overflow=false;';
+                        case 1:  // ASL
+                            return 'var dst=c.l16(' + ea + ');var carry=((dst&0x8000)!==0);var res=(dst<<1)&0xffff;c.s16(' + ea + ',res);var overflow=(((dst^res)&0x8000)!==0);';
+                        case 2:  // LSR
+                            return 'var dst=c.l16(' + ea + ');var carry=((dst&0x0001)!==0);var res=(dst>>>1)&0x7fff;c.s16(' + ea + ',res);var overflow=false;';
+                        case 3:  // LSL
+                            return 'var dst=c.l16(' + ea + ');var carry=((dst&0x8000)!==0);var res=(dst<<1)&0xffff;c.s16(' + ea + ',res);var overflow=false;';
+                    }
+                    return 'throw console.assert(false);';
+                },
+                2
+            );
+            switch (memShiftType) {
+                case 0:
+                case 1:
+                case 2:
+                case 3:
+                    return {
+                        'code': [memEa.code],
+                        'out': {
+                            'x': 'carry',
+                            'n': '((res&0x8000)!==0)',
+                            'z': '(res===0)',
+                            'v': 'overflow',
+                            'c': 'carry'
+                        },
+                        'pc': memEa.pc
+                    };
+                default:
+                    this.log('not impl: line=E memory rotate');
+                    throw console.assert(false);
+            }
         }
         
         var shiftType = (dir << 2) | (arith << 1) | rotate;
