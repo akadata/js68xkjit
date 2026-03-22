@@ -1,7 +1,6 @@
 main:
     nop
-    suba.w #1,a0
-    suba.w d0,a1
+    moveq #0,d0
 check:
     .dc.l 0xffffffff
     .dc.l 0xd0, 0

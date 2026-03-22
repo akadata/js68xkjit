@@ -1,0 +1,51 @@
+// Amiga-shaped laboratory map for the j68 test machine.
+//
+// This is only a layout scaffold. Matching an Amiga address range does not
+// imply Amiga motherboard behavior, chipset semantics, CIA behavior, Gary
+// behavior, Autoconfig, or Exec-visible meaning.
+//
+// The DE0000 window is reserved for this machine's own test devices even
+// though the address lives in an Amiga-like region.
+module.exports = {
+    CHIP_RAM_START: 0x00000000,
+    CHIP_RAM_END: 0x001fffff,
+    CHIP_RAM_MAX_SIZE: 0x00200000,
+
+    FAST_RAM_START: 0x00200000,
+    FAST_RAM_END: 0x009fffff,
+    FAST_RAM_MAX_SIZE: 0x00800000,
+
+    CIA_START: 0x00bf0000,
+    CIA_END: 0x00bfffff,
+
+    RTC_START: 0x00dc0000,
+    RTC_END: 0x00dcffff,
+
+    // Test-machine MMIO reservation. Not a claim about real Amiga DE-space.
+    MACHINE_IO_START: 0x00de0000,
+    MACHINE_IO_END: 0x00deffff,
+
+    UART_START: 0x00de0000,
+    UART_END: 0x00de000f,
+    UART_SIZE: 0x10,
+
+    TIMER_START: 0x00de0010,
+    TIMER_END: 0x00de001f,
+    TIMER_SIZE: 0x10,
+
+    INTC_START: 0x00de0020,
+    INTC_END: 0x00de002f,
+    INTC_SIZE: 0x10,
+
+    DEBUGREGS_START: 0x00de0030,
+    DEBUGREGS_END: 0x00de003f,
+    DEBUGREGS_SIZE: 0x10,
+
+    ROM_START: 0x00f80000,
+    ROM_END: 0x00ffffff,
+    ROM_SIZE: 0x00080000,
+
+    // Kickstart-style reset overlay. ROM is visible at address 0 after reset
+    // until the machine explicitly disables the overlay.
+    RESET_OVERLAY_START: 0x00000000
+};

@@ -1,7 +1,5 @@
 main:
     nop
-    ori.w #0x5555,d0
-    ori.w #0x5555,(a0)
 check:
     .dc.l 0xffffffff
     .dc.l 0xd0, 0

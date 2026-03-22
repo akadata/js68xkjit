@@ -5,5 +5,5 @@ main:
     lab1:
 check:
     .dc.l 0xffffffff
-    .dc.l 0xd0, 0
+    .dc.l 0xd0, 4
     .dc.l 0

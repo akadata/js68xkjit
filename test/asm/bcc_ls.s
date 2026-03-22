@@ -1,7 +1,9 @@
 main:
     nop
-    bls lab4
-    lab4:
+    bls skip
+    addq.l #1,d0
+skip:
+    nop
 check:
     .dc.l 0xffffffff
     .dc.l 0xd0, 0

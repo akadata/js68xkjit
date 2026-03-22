@@ -1,0 +1,46 @@
+# Exclude tests that are outside the current 68000 Phase 1 target.
+# These remain buildable, but they are not part of the real Phase 1 runtime pass count.
+
+# 68010+
+r/bkpt.r
+r/movec_c_to_r.r
+r/movec_r_to_c.r
+r/moves_b.r
+r/moves_w.r
+r/moves_l.r
+r/rtd.r
+
+# 68020+
+r/bfchg.r
+r/bfclr.r
+r/bfexts.r
+r/bfextu.r
+r/bfffo.r
+r/bfins.r
+r/bfset.r
+r/bftst.r
+r/callm.r
+r/cas_b.r
+r/cas_w.r
+r/cas_l.r
+r/cas2_l.r
+r/chk2_w.r
+r/chk2_l.r
+r/cmp2_w.r
+r/cmp2_l.r
+r/extb.r
+r/pack.r
+r/rtm.r
+r/trapcc.r
+r/unpk.r
+
+# 68030/68040+
+r/pflush.r
+r/pflusha.r
+r/pload.r
+r/pmove.r
+r/ptest.r
+r/cinv.r
+r/cpush.r
+r/move16_mem_mem.r
+r/move16_mem_reg.r

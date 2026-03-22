@@ -1,0 +1,18 @@
+    .org 0x20
+    .dc.l priv_handler
+    .org 0x100
+main:
+    moveq #0,d0
+    movec cacr,d1
+    moveq #1,d0
+    bra check
+priv_handler:
+    moveq #8,d0
+check:
+    .dc.l 0xffffffff
+    .dc.l 0xd0, 8
+    .dc.l 0xa7, 0x2ffa
+    .dc.l 0xe1, 0x2ffa, 0x0004
+    .dc.l 0xe2, 0x2ffc, 0x00000102
+    .dc.l 0xf20, 0x2000, 0x2000
+    .dc.l 0

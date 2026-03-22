@@ -2,9 +2,11 @@
 
 This document tracks instruction coverage and implementation tasks across the Motorola 68K family and 68881/68882 FPU.
 
-**Last Updated:** 2026-03-21  
-**Total Assembly Tests:** 224 files  
-**Build Status:** All build successfully with m68k-amigaos toolchain
+**Last Updated:** 2026-03-22  
+**Total Assembly Tests:** 233 files  
+**Build Status:** All build successfully with m68k-amigaos toolchain  
+**Current runner baseline:** `231/233` passing  
+**Coverage note:** all current semantic tests pass; `CALLM/RTM` are explicitly deferred pending authoritative module-descriptor and module-state semantics
 
 ---
 
@@ -13,7 +15,7 @@ This document tracks instruction coverage and implementation tasks across the Mo
 | Status | Meaning |
 |--------|---------|
 | [X] | Implemented in j68.js + test file exists |
-| [T] | Test file exists (stub or partial) |
+| [T] | Semantic test exists, or coverage is explicitly deferred pending authoritative semantics |
 | [ ] | Missing - no test or implementation |
 | [P] | Test file exists, implementation pending |
 
@@ -28,7 +30,7 @@ This document tracks instruction coverage and implementation tasks across the Mo
 | MOVE | B/W/L all EA modes | move_*.s (16 files) | [X] | Core coverage |
 | MOVEA | W/L | movea_w.s, movea_l.s | [X] | |
 | MOVEQ | L | moveq_*.s (6 files) | [X] | |
-| MOVEM | L/W | movem_l.s, movem_w.s | [P] | Stub implementation |
+| MOVEM | L/W | movem_l.s, movem_w.s | [P] | Implementation pending |
 | MOVEP | W/L | movep_*.s (4 files) | [T] | Test exists |
 | MOVE to CCR | - | move_to_ccr.s | [X] | 68010+ |
 | MOVE from CCR | - | move_ccr_1.s | [X] | |
@@ -96,14 +98,14 @@ This document tracks instruction coverage and implementation tasks across the Mo
 | BCLR | Dn/mem | bclr_d_d.s | [P] | |
 | BSET | Dn/mem | bset_d_d.s | [P] | |
 | BCHG | Dn/mem | bchg_d_d.s | [P] | |
-| BFCHG | mem | bfchg.s | [T] | 68020+ stub |
-| BFCLR | mem | bfclr.s | [T] | 68020+ stub |
-| BFEXTS | mem | bfexts.s | [T] | 68020+ stub |
-| BFEXTU | mem | bfextu.s | [T] | 68020+ stub |
-| BFFFO | mem | bfffo.s | [T] | 68020+ stub |
-| BFINS | mem | bfins.s | [T] | 68020+ stub |
-| BFSET | mem | bfset.s | [T] | 68020+ stub |
-| BFTST | mem | bftst.s | [T] | 68020+ stub |
+| BFCHG | mem | bfchg.s | [T] | 68020+ semantic test exists |
+| BFCLR | mem | bfclr.s | [T] | 68020+ semantic test exists |
+| BFEXTS | mem | bfexts.s | [T] | 68020+ semantic test exists |
+| BFEXTU | mem | bfextu.s | [T] | 68020+ semantic test exists |
+| BFFFO | mem | bfffo.s | [T] | 68020+ semantic test exists |
+| BFINS | mem | bfins.s | [T] | 68020+ semantic test exists |
+| BFSET | mem | bfset.s | [T] | 68020+ semantic test exists |
+| BFTST | mem | bftst.s | [T] | 68020+ semantic test exists |
 
 ### Program Control
 
@@ -120,10 +122,10 @@ This document tracks instruction coverage and implementation tasks across the Mo
 | RTR | - | rtr.s | [X] | |
 | RTE | - | rte.s | [T] | Privileged |
 | RTD | - | rtd.s | [T] | 68010+ |
-| RTM | - | rtm.s | [T] | 68020+ stub |
+| RTM | - | rtm.s | [T] | Deferred: local smoke test is invalid and local corpus does not define a concrete saved module-state layout well enough for an authoritative semantic test |
 | TRAP | #0-#15 | trap.s, trap_a.s | [X] | |
 | TRAPV | - | trapv.s | [X] | |
-| TRAPcc | - | trapcc.s | [T] | 68020+ stub |
+| TRAPcc | - | trapcc.s | [T] | 68020+ semantic test exists |
 | CHK | - | chk.s | [P] | |
 | CHK2 | W/L | chk2_w.s, chk2_l.s | [T] | 68020+ |
 | ILLEGAL | - | illegal.s | [T] | |
@@ -167,7 +169,7 @@ This document tracks instruction coverage and implementation tasks across the Mo
 
 | Mnemonic | Variants | Test Files | Status | Notes |
 |----------|----------|------------|--------|-------|
-| CALLM | - | callm.s | [T] | Stub (removed in 68040) |
+| CALLM | - | callm.s | [T] | Deferred: local smoke test is invalid and local corpus does not define a concrete module descriptor layout well enough for an authoritative semantic test |
 | CAS | B/W/L | cas_b.s, cas_w.s, cas_l.s | [T] | Compare-and-swap |
 | CAS2 | L | cas2_l.s | [T] | Dual compare-and-swap |
 | PACK | - | pack.s | [T] | Data packing |
@@ -296,43 +298,22 @@ This document tracks instruction coverage and implementation tasks across the Mo
 
 ## Implementation Priority
 
-### Phase 1: Complete 68000 Base (Highest Priority)
-- [ ] ADD/SUB full EA modes + flags
-- [ ] CMP full implementation
-- [ ] AND/OR/EOR full EA modes
-- [ ] Bcc all conditions (complete)
-- [ ] Shift/rotate full implementation
-- [ ] Bit operations (BTST/BCLR/BSET/BCHG)
-- [ ] MOVEM complete implementation
-- [ ] MULS/MULU flag handling
+### Open Workstreams
 
-### Phase 2: 68010/68020 Core
-- [ ] MOVEC/MOVES (privileged)
-- [ ] RTD implementation
-- [ ] EXTB implementation
-- [ ] CAS/CAS2 implementation
-- [ ] PACK/UNPK implementation
-- [ ] CHK2/CMP2 implementation
-
-### Phase 3: 68030 MMU
-- [ ] PFLUSH/PFLUSHA
-- [ ] PLOAD (68030 only)
-- [ ] PMOVE
-- [ ] PTEST
-
-### Phase 4: 68040 Cache
-- [ ] CINV
-- [ ] CPUSH
-- [ ] MOVE16
-
-### Phase 5: FPU (68881/68882)
-- [ ] FMOVE basic
-- [ ] FADD/FSUB/FMUL/FDIV
-- [ ] FNEG/FABS/FSQRT
-- [ ] FCMP/FTST
-- [ ] FBcc conditions
-- [ ] Transcendental functions
-- [ ] FSAVE/FRESTORE
+- `68000` core completion:
+  - shift/rotate completeness
+  - `MOVEM`
+  - broader EA closure
+  - remaining completeness gaps shown above and in `FAMILY_MATRIX.md`
+- `68010/68020` expansion:
+  - broader generation-level closure beyond the currently tested semantic subset
+  - `CALLM/RTM` remain deferred pending authoritative semantics
+- `68030 + MMU`:
+  - broader MMU/control coverage beyond the currently tested PMMU subset
+- `68040 + cache/MMU`:
+  - broader cache/MMU coverage beyond the currently tested subset
+- `68881/68882` and `68040 FPU`:
+  - major floating-point families remain untested
 
 ---
 
@@ -359,12 +340,10 @@ src/
 
 ## Notes
 
-1. **Stub files** use `dc.w 0xFFFF` to trigger F-line trap for instructions requiring specific CPU features not available in the base assembler.
+1. **Privileged instructions** (MOVEC, MOVES, STOP, RTE, etc.) require supervisor mode emulation.
 
-2. **Privileged instructions** (MOVEC, MOVES, STOP, RTE, etc.) require supervisor mode emulation.
+2. **68040 FPU split**: Some FPU instructions are hardware-direct on 68040, others require software emulation via traps.
 
-3. **68040 FPU split**: Some FPU instructions are hardware-direct on 68040, others require software emulation via traps.
+3. **ProcessorTests reference**: `ProcessorTests/680x0/68000/v1/` contains ~500,000 validation test cases.
 
-4. **ProcessorTests reference**: `/home/smalley/reference/ProcessorTests/680x0/68000/v1/` contains ~500,000 validation test cases.
-
-5. **Addressing modes**: Current tests cover common modes; full EA coverage needed for complete validation.
+4. **Addressing modes**: Current tests cover a validated subset; broader EA coverage is still needed for complete family claims.

@@ -1,8 +1,10 @@
 main:
     nop
-    sub.l #1,d0
-    sub.l d0,d1
+    moveq #8,d0
+    moveq #3,d1
+    sub.l d1,d0
 check:
     .dc.l 0xffffffff
-    .dc.l 0xd0, 0
+    .dc.l 0xd0, 5
+    .dc.l 0xd1, 3
     .dc.l 0

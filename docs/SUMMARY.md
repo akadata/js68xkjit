@@ -1,5 +1,7 @@
 # j68k Project Summary
 
+> Historical summary only. Current source of truth is `COVERAGE.md`, `PROGRESS.md`, and `FAMILY_MATRIX.md`. Primary runner baseline is `231/233` passing. `phase1.skip` remains a legacy filtered profile (`195/195`, `38` skipped) for subset regression runs, but it is not the overall project baseline.
+
 ## Completed Tasks
 
 ### 1. Build System Update ✓
@@ -71,7 +73,7 @@
 ## File Structure
 
 ```
-/home/smalley/reference/j68k/
+j68k/
 ├── src/
 │   └── j68.js              # Main emulator (611 lines)
 └── test/
@@ -118,7 +120,7 @@ python3 test/gen_asm.py
 ```
 
 ## ProcessorTests Reference
-Location: `/home/smalley/reference/ProcessorTests/680x0/68000/v1/`
+Location: `ProcessorTests/680x0/68000/v1/`
 - 125 JSON.gz test files
 - ~500,000 total test cases
 - Comprehensive coverage of all 68000 instructions

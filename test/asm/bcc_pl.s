@@ -1,7 +1,9 @@
 main:
     nop
-    bpl lab11
-    lab11:
+    bpl skip
+    addq.l #1,d0
+skip:
+    nop
 check:
     .dc.l 0xffffffff
     .dc.l 0xd0, 0

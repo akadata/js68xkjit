@@ -1,5 +1,22 @@
 # j68k 68000 Implementation Status
 
+## Current Status
+
+- Source-of-truth runner status: `231/233` passing
+- Legacy filtered subset status: `195/195` passing with `38` skipped via `phase1.skip`
+- All current semantic tests pass
+- The validated suite is complete for currently covered instruction families
+- `CALLM/RTM` are explicitly deferred pending authoritative module-descriptor and module-state semantics
+- `CALLM/RTM` are not claimed as covered instructions
+
+See [COVERAGE.md](COVERAGE.md) and [PROGRESS.md](PROGRESS.md) for the maintained current-state record.
+
+---
+
+## Historical Inventory
+
+The remainder of this file is a historical instruction/test inventory and should not be treated as the current source of truth for coverage status.
+
 ## Test Coverage
 
 ### Assembly Test Files: 161 tests covering all 68000 instructions
