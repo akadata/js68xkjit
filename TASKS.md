@@ -14,7 +14,10 @@ The small j68 software environment has reached a clean checkpoint:
 - `source/` + `loadasm` workflow is stable
 - host-built binaries in `work/programs/` build into `save/`
 - reusable guest-side output helpers now exist
+- guest-side polling input helpers now exist
+- a minimal cooperative guest runtime now exists
 - visible formatted output works from real 68k binaries
+- interactive guest input works from the real launcher
 
 Current reusable guest-side helper layer:
 
@@ -24,6 +27,14 @@ Current reusable guest-side helper layer:
   - `newline`
   - `puthex32`
   - `puts_hex32`
+- `work/programs/lib/input.inc`
+  - `getc`
+  - `put_prompt`
+  - `readline`
+- `work/programs/lib/task.inc`
+  - `scheduler_start`
+  - `yield`
+  - `task_exit`
 
 Current visible proof binaries:
 
@@ -33,35 +44,45 @@ Current visible proof binaries:
 - `print_status.bin`
 - `ram_checksum.bin`
 - `pi16_nilakantha.bin`
+- `echo_line.bin`
+- `coop_demo.bin`
 
 This is now a proper little software environment, not just isolated probes.
 
 ## Next Subsystem Boundary
 
-The next clean subsystem is input, not `CALLM/RTM`.
+The next clean subsystem is input polish and then interrupt-driven input, not `CALLM/RTM`.
 
-Recommended next order:
+Current completed order:
 
 1. guest-side input helpers
    - `getc`
    - prompt helper
    - simple line read
-   - start with polling against UART status/data
+   - polling against UART status/data
 2. one interactive demo binary
    - `echo_line.bin`
-3. only after input is solid:
-   - cooperative multitasking work
+3. minimal cooperative multitasking
+   - fixed two-task setup
+   - explicit `yield`
+   - `coop_demo.bin`
 
-Cooperative multitasking remains on the roadmap, but it should come after the
-input-side helper layer so the machine has a usable conversational path first.
-Interrupt-driven input should come after the first polling-based input path is
-proven.
+Recommended next order:
+
+1. input niceties
+   - backspace handling
+   - bounded line editing polish
+2. interrupt-driven input
+   - cleaner IPL exposure first
+   - no JS-side scheduler
+3. richer cooperative demos
+   - still no preemption
 
 Immediate acceptance for the next block:
 
-- reusable guest-side input helper layer exists in `work/programs/lib/`
-- `echo_line.bin` prompts, reads a line through UART RX, echoes it back, and returns
-- focused system test proves visible input/output behavior
+- guest input remains polling-clean in the launcher
+- a richer interactive demo works end to end
+- cooperative runtime remains guest-side only
 
 ## Current Architectural Gap
 

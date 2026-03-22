@@ -4,9 +4,9 @@ Current source of truth: [TASKS.md](TASKS.md)
 
 Immediate next block:
 
-1. guest-side input helpers, polling first
-2. one interactive demo binary: `echo_line.bin`
-3. review before any cooperative multitasking work
+1. input niceties on the guest/launcher boundary
+2. interrupt-driven input after cleaner IPL exposure
+3. richer cooperative guest demos, still without preemption
 
 Constraints:
 

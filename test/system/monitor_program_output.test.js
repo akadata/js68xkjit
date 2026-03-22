@@ -34,6 +34,19 @@ var bootMonitorMachine = require('./support/boot_machine').bootMonitorMachine;
     assert.equal(output.indexOf('3.14154\r\n') !== -1, true, 'print_pi16.bin did not print expected pi text');
 })();
 
+(function testCooperativeDemoBinary() {
+    var state = bootMonitorMachine();
+    state.uart.consumeTxString();
+    state.uart.enqueueRxString(
+        'load 00090000 coop_demo.bin\r' +
+        'g 00090000\r'
+    );
+    state.machine.pollMonitor();
+    var output = state.uart.txString();
+    assert.equal(output.indexOf('ABABABABAB\r\n') !== -1, true, 'coop_demo.bin did not interleave the two tasks');
+    assert.equal(/j68> $/.test(output), true, 'coop_demo.bin did not return to the monitor prompt');
+})();
+
 (function testPrintStatusBinary() {
     var state = bootMonitorMachine();
     state.uart.consumeTxString();

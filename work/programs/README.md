@@ -41,6 +41,11 @@ Programs:
   - reads one line from UART RX
   - echoes it back
   - returns to the monitor
+- `coop_demo.bin`
+  - minimal cooperative multitasking proof
+  - runs two fixed guest tasks with explicit `yield`
+  - prints `ABABABABAB` then returns to the monitor
+
 
 Shared helper layer:
 
@@ -54,6 +59,11 @@ Shared helper layer:
   - `getc`
   - `put_prompt`
   - `readline`
+- `work/programs/lib/task.inc`
+  - `scheduler_start`
+  - `yield`
+  - `task_exit`
+
 
 Role split:
 
@@ -90,5 +100,8 @@ load 00090000 print_status.bin
 g 00090000
 
 load 00090000 echo_line.bin
+g 00090000
+
+load 00090000 coop_demo.bin
 g 00090000
 ```
