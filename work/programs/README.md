@@ -44,6 +44,8 @@ Programs:
 - `coop_demo.bin`
   - minimal cooperative multitasking proof
   - runs two fixed guest tasks with explicit `yield`
+  - position-independent cooperative multitasking proof
+  - can be loaded at different RAM addresses
   - prints `ABABABABAB` then returns to the monitor
 
 

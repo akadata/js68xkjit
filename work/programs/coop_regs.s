@@ -30,10 +30,11 @@ start:
 
 task1:
         movea.l #UART_DATA,a1
-        moveq   #4,d7
+        lea     text1(pc),a0
+        moveq   #2,d7
 
 task1_loop:
-        moveq   #65,d0
+        move.b  (a0)+,d0
         bsr.w   putc
         bsr.w   yield
         dbra    d7,task1_loop
@@ -41,10 +42,11 @@ task1_loop:
 
 task2:
         movea.l #UART_DATA,a1
-        moveq   #4,d7
+        lea     text2(pc),a0
+        moveq   #2,d7
 
 task2_loop:
-        moveq   #66,d0
+        move.b  (a0)+,d0
         bsr.w   putc
         bsr.w   yield
         dbra    d7,task2_loop
@@ -70,6 +72,12 @@ task2_stack:
 
 task2_entry:
         dc.l    task2
+
+text1:
+        dc.b    'ACE',0
+
+text2:
+        dc.b    'BDF',0
 
         include "work/programs/lib/console.inc"
         include "work/programs/lib/task.inc"
