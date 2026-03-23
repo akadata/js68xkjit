@@ -33,6 +33,23 @@ Type commands and press Enter.
 
 Exit with `Ctrl+C`.
 
+Default monitor startup uses a cached generated ROM binary if one already
+exists.
+
+Rebuild the monitor ROM from source explicitly with:
+
+```sh
+node tools/monitor.js --from-source
+```
+
+Clear generated ROM cache first with:
+
+```sh
+node tools/monitor.js --clean-generated
+```
+
+Generated ROM binaries are stored under `build/generated/m68k/`.
+
 ## Number Rules
 
 The monitor uses different numeric conventions depending on context.
@@ -320,6 +337,37 @@ Current host-built examples include:
   - fills/checks RAM and leaves checksum in `D0`
 - `pi16_nilakantha.bin`
   - computes pi in `16.16` and leaves the result in `D0`
+
+### CPU Test Build Flow
+
+The standalone CPU runner in `test/` is cache-first by default.
+
+Default run:
+
+```sh
+cd test
+node runner.js
+```
+
+This uses existing `r/*.r` binaries and only rebuilds missing outputs.
+
+Explicit source rebuild run:
+
+```sh
+cd test
+node runner.js --from-source
+```
+
+This rebuilds all `asm/*.s` inputs into `r/*.r` first, then runs the tests.
+
+Direct build maintenance:
+
+```sh
+cd test
+node build.js --rebuild-missing
+node build.js --rebuild-all
+node build.js --clean --rebuild-all
+```
 
 ### Helper Layers
 

@@ -17,7 +17,8 @@ function bootMachine(options) {
     options = options || {};
     var rom = options.rom || assemble.assembleToBinary(
         path.join(__dirname, '../../..', 'rom', options.romName || 'monitor.S'),
-        options.cpuType || cpuType
+        options.cpuType || cpuType,
+        { fromSource: !!options.fromSource }
     );
     var machine = new TestMachine({
         rom: rom,

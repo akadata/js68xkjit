@@ -2,7 +2,29 @@
 
 set -euo pipefail
 
-runner="${1:-}"
+mode=""
+flags=()
+
+for arg in "$@"; do
+    case "$arg" in
+        bench|full|runner)
+            if [ -n "$mode" ]; then
+                echo "usage: $0 [bench|full|runner] [--from-source|--rebuild-missing|--rebuild-all|--clean]" >&2
+                exit 1
+            fi
+            mode="$arg"
+            ;;
+        --from-source|--rebuild-missing|--rebuild-all|--clean)
+            flags+=("$arg")
+            ;;
+        "")
+            ;;
+        *)
+            echo "usage: $0 [bench|full|runner] [--from-source|--rebuild-missing|--rebuild-all|--clean]" >&2
+            exit 1
+            ;;
+    esac
+done
 
 SYSTEM_TESTS=(
     test/system/boot.test.js
@@ -31,18 +53,41 @@ SYSTEM_TESTS=(
 BENCH_TEST="test/system/monitor_bench.test.js"
 CPU_TYPES=(68000 68020 68030 68040)
 
+contains_flag() {
+    local needle="$1"
+    shift || true
+    local item
+    for item in "$@"; do
+        if [ "$item" = "$needle" ]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
+prepare_generated() {
+    if contains_flag --clean "${flags[@]}"; then
+        node -e "require('./tools/support/assemble_m68k').cleanGenerated()"
+    fi
+}
+
 run_system_tests() {
     local cpu="${1:-}"
+    local env_args=()
 
     if [ -n "$cpu" ]; then
         echo "----- Testing CPU ${cpu} -----"
     fi
 
+    if contains_flag --from-source "${flags[@]}" || contains_flag --rebuild-all "${flags[@]}"; then
+        env_args+=(J68_FROM_SOURCE=1)
+    fi
+
     for test_file in "${SYSTEM_TESTS[@]}"; do
         if [ -n "$cpu" ]; then
-            J68_CPU_TYPE="$cpu" node "$test_file"
+            env "${env_args[@]}" J68_CPU_TYPE="$cpu" node "$test_file"
         else
-            node "$test_file"
+            env "${env_args[@]}" node "$test_file"
         fi
     done
 }
@@ -56,11 +101,13 @@ run_bench_tests() {
 
 run_runner() {
     pushd test >/dev/null || exit 1
-    node runner.js
+    node runner.js "${flags[@]}"
     popd >/dev/null || exit 1
 }
 
-case "$runner" in
+prepare_generated
+
+case "$mode" in
     "")
         run_system_tests
         ;;
@@ -78,7 +125,7 @@ case "$runner" in
         run_runner
         ;;
     *)
-        echo "usage: $0 [bench|full|runner]" >&2
+        echo "usage: $0 [bench|full|runner] [--from-source|--rebuild-missing|--rebuild-all|--clean]" >&2
         exit 1
         ;;
 esac

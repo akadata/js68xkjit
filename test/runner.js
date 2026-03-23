@@ -2,9 +2,53 @@
 
 var assert = require('assert');
 var buffer = require('buffer');
+var childProcess = require('child_process');
 var fs = require('fs');
+var path = require('path');
 var j68 = require('../src/j68');
 
+function parseArgs(argv) {
+	var args = {
+		rebuildMissing: false,
+		rebuildAll: false,
+		clean: false
+	};
+	argv.forEach(function (arg) {
+		switch (arg) {
+			case '--from-source':
+			case '--rebuild-all':
+				args.rebuildAll = true;
+				break;
+			case '--rebuild-missing':
+				args.rebuildMissing = true;
+				break;
+			case '--clean':
+				args.clean = true;
+				break;
+			default:
+				throw new Error('unknown argument: ' + arg);
+		}
+	});
+	if (!args.rebuildAll && !args.rebuildMissing)
+		args.rebuildMissing = true;
+	return args;
+}
+
+function ensureArtifacts(args) {
+	var buildArgs = [];
+	if (args.clean)
+		buildArgs.push('--clean');
+	if (args.rebuildAll)
+		buildArgs.push('--rebuild-all');
+	else if (args.rebuildMissing)
+		buildArgs.push('--rebuild-missing');
+	childProcess.execFileSync(process.execPath, [ path.join(__dirname, 'build.js') ].concat(buildArgs), {
+		stdio: 'inherit'
+	});
+}
+
+var runnerArgs = parseArgs(process.argv.slice(2));
+ensureArtifacts(runnerArgs);
 var json = JSON.parse(fs.readFileSync('test.list', { encoding: 'utf8' }));
 var skipFile = process.env.J68_SKIP_FILE;
 var failFast = process.env.J68_FAIL_FAST === '1';

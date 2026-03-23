@@ -3,6 +3,12 @@ var fs = require('fs');
 var os = require('os');
 var path = require('path');
 
+var rebuiltInProcess = {};
+
+function repoRoot() {
+    return path.resolve(__dirname, '..', '..');
+}
+
 function tool(name) {
     try {
         if (name.indexOf('/') !== -1) {
@@ -28,19 +34,52 @@ function firstTool(candidates) {
 
 function candidateAssemblers() {
     return [
-        'm68k-linux-gnu-as',
-        'm68k-elf-as',
         'm68k-amigaos-as',
-        '/opt/amiga/bin/m68k-amigaos-as'
+        '/opt/amiga/bin/m68k-amigaos-as',
+        'm68k-none-elf-as',
+        'm68k-unknown-elf-as',
+        'm68k-linux-gnu-as',
+        'm68k-elf-as'
     ];
 }
 
 function candidateObjcopy() {
     return [
-        'm68k-linux-gnu-objcopy',
-        'm68k-elf-objcopy',
         'm68k-amigaos-objcopy',
-        '/opt/amiga/bin/m68k-amigaos-objcopy'
+        '/opt/amiga/bin/m68k-amigaos-objcopy',
+        'm68k-none-elf-objcopy',
+        'm68k-unknown-elf-objcopy',
+        'm68k-linux-gnu-objcopy',
+        'm68k-elf-objcopy'
+    ];
+}
+
+function candidateToolchains() {
+    return [
+        {
+            assembler: 'm68k-amigaos-as',
+            objcopy: 'm68k-amigaos-objcopy'
+        },
+        {
+            assembler: '/opt/amiga/bin/m68k-amigaos-as',
+            objcopy: '/opt/amiga/bin/m68k-amigaos-objcopy'
+        },
+        {
+            assembler: 'm68k-none-elf-as',
+            objcopy: 'm68k-none-elf-objcopy'
+        },
+        {
+            assembler: 'm68k-unknown-elf-as',
+            objcopy: 'm68k-unknown-elf-objcopy'
+        },
+        {
+            assembler: 'm68k-linux-gnu-as',
+            objcopy: 'm68k-linux-gnu-objcopy'
+        },
+        {
+            assembler: 'm68k-elf-as',
+            objcopy: 'm68k-elf-objcopy'
+        }
     ];
 }
 
@@ -49,6 +88,42 @@ function resolveToolchain() {
         assembler: process.env.M68K_AS || firstTool(candidateAssemblers()),
         objcopy: process.env.M68K_OBJCOPY || firstTool(candidateObjcopy())
     };
+}
+
+function resolvedToolchainCandidates() {
+    var seen = {};
+    var list = [];
+    var envAssembler = process.env.M68K_AS || '';
+    var envObjcopy = process.env.M68K_OBJCOPY || '';
+    var resolvedDefault = resolveToolchain();
+
+    function pushCandidate(assemblerName, objcopyName) {
+        var assembler = assemblerName ? tool(assemblerName) : '';
+        var objcopy = objcopyName ? tool(objcopyName) : '';
+        var key;
+
+        if (!assembler || !objcopy)
+            return;
+        key = assembler + '|' + objcopy;
+        if (seen[key])
+            return;
+        seen[key] = true;
+        list.push({
+            assembler: assembler,
+            objcopy: objcopy
+        });
+    }
+
+    if (envAssembler || envObjcopy) {
+        pushCandidate(envAssembler || resolvedDefault.assembler, envObjcopy || resolvedDefault.objcopy);
+        return list;
+    }
+
+    candidateToolchains().forEach(function (entry) {
+        pushCandidate(entry.assembler, entry.objcopy);
+    });
+    pushCandidate(resolvedDefault.assembler, resolvedDefault.objcopy);
+    return list;
 }
 
 function asFlagForCpu(cpuType) {
@@ -86,32 +161,116 @@ function ensureToolchain(errorMessage) {
     return resolved;
 }
 
-function assembleToBinary(sourceFile, cpuType, errorMessage) {
-    var toolchain = ensureToolchain(errorMessage);
-    var tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'j68-rom-'));
-    var objectFile = path.join(tempDir, 'out.o');
-    var binaryFile = path.join(tempDir, 'out.bin');
+function ensureDirectory(filePath) {
+    fs.mkdirSync(path.dirname(filePath), { recursive: true });
+}
 
-    try {
-        childProcess.execFileSync(toolchain.assembler, [ asFlagForCpu(cpuType), '-o', objectFile, sourceFile ], { stdio: 'pipe' });
-    } catch (error) {
-        throw new Error(summarizeExecError(error));
+function generatedRoot() {
+    return path.join(repoRoot(), 'build', 'generated', 'm68k');
+}
+
+function normalizedRelativeSource(sourceFile) {
+    var sourcePath = path.resolve(sourceFile);
+    var relative = path.relative(repoRoot(), sourcePath);
+    if (relative.indexOf('..') === 0)
+        relative = path.basename(sourcePath);
+    return relative.replace(/\\/g, '/');
+}
+
+function generatedBinaryPath(sourceFile, cpuType, options) {
+    options = options || {};
+    var bucket = options.omitCpuFlag ? 'generic' : String(cpuType || '68000').toLowerCase();
+    var relative = normalizedRelativeSource(sourceFile).replace(/\.[^.]+$/, '.bin');
+    return path.join(generatedRoot(), bucket, relative);
+}
+
+function buildKey(sourceFile, cpuType, options, outputFile) {
+    return [
+        path.resolve(sourceFile),
+        options && options.omitCpuFlag ? 'generic' : String(cpuType || '68000').toLowerCase(),
+        path.resolve(outputFile)
+    ].join('|');
+}
+
+function buildBinaryFile(sourceFile, binaryFile, cpuType, errorMessage, options) {
+    var tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'j68-asm-'));
+    var objectFile = path.join(tempDir, 'out.o');
+    var args = [];
+    var candidates = resolvedToolchainCandidates();
+    var lastError = null;
+    var attempted = [];
+    var i;
+
+    options = options || {};
+    ensureDirectory(binaryFile);
+    if (candidates.length === 0)
+        throw new Error(errorMessage || 'm68k assembler/objcopy are required');
+    if (!options.omitCpuFlag)
+        args.push(asFlagForCpu(cpuType));
+    args.push('-o', objectFile, path.resolve(sourceFile));
+
+    for (i = 0; i < candidates.length; ++i) {
+        try {
+            childProcess.execFileSync(candidates[i].assembler, args, { stdio: 'pipe' });
+            childProcess.execFileSync(candidates[i].objcopy, [ '-O', 'binary', objectFile, path.resolve(binaryFile) ], { stdio: 'pipe' });
+            return binaryFile;
+        } catch (error) {
+            lastError = error;
+            attempted.push(path.basename(candidates[i].assembler));
+        }
     }
-    childProcess.execFileSync(toolchain.objcopy, [ '-O', 'binary', objectFile, binaryFile ], { stdio: 'pipe' });
+    throw new Error(
+        (errorMessage || 'm68k assembler/objcopy are required') +
+        ': tried ' + attempted.join(', ') +
+        '; last error: ' + summarizeExecError(lastError)
+    );
+}
+
+function assembleToBinary(sourceFile, cpuType, errorMessage, options) {
+    var tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'j68-rom-'));
+    var binaryFile = path.join(tempDir, 'out.bin');
+    buildBinaryFile(sourceFile, binaryFile, cpuType, errorMessage, options || {});
     return new Uint8Array(fs.readFileSync(binaryFile));
 }
 
-function assembleSourceText(sourceText, cpuType, errorMessage) {
+function assembleToBinaryCached(sourceFile, cpuType, options, errorMessage) {
+    var binaryFile;
+    var key;
+
+    options = options || {};
+    binaryFile = options.outputFile || generatedBinaryPath(sourceFile, cpuType, options);
+    key = buildKey(sourceFile, cpuType, options, binaryFile);
+
+    if (!options.forceRebuild && fs.existsSync(binaryFile))
+        return new Uint8Array(fs.readFileSync(binaryFile));
+    if (options.forceRebuild && rebuiltInProcess[key] && fs.existsSync(binaryFile))
+        return new Uint8Array(fs.readFileSync(binaryFile));
+
+    buildBinaryFile(sourceFile, binaryFile, cpuType, errorMessage, options);
+    rebuiltInProcess[key] = true;
+    return new Uint8Array(fs.readFileSync(binaryFile));
+}
+
+function assembleSourceText(sourceText, cpuType, errorMessage, options) {
     var tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'j68-asm-'));
     var sourceFile = path.join(tempDir, 'line.s');
     fs.writeFileSync(sourceFile, sourceText);
-    return assembleToBinary(sourceFile, cpuType, errorMessage);
+    return assembleToBinary(sourceFile, cpuType, errorMessage, options);
+}
+
+function cleanGenerated() {
+    fs.rmSync(generatedRoot(), { recursive: true, force: true });
 }
 
 module.exports = {
     asFlagForCpu: asFlagForCpu,
     assembleSourceText: assembleSourceText,
     assembleToBinary: assembleToBinary,
+    assembleToBinaryCached: assembleToBinaryCached,
+    buildBinaryFile: buildBinaryFile,
+    cleanGenerated: cleanGenerated,
+    generatedBinaryPath: generatedBinaryPath,
+    resolvedToolchainCandidates: resolvedToolchainCandidates,
     resolveToolchain: resolveToolchain,
     summarizeExecError: summarizeExecError,
     tool: tool

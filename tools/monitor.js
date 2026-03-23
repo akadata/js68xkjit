@@ -12,6 +12,27 @@ var createLineEditor = require('./support/line_editor').createLineEditor;
 
 var cpuType = process.env.J68_CPU_TYPE || '68000';
 
+function parseArgs(argv) {
+    var options = {
+        fromSource: false,
+        cleanGenerated: false
+    };
+
+    argv.forEach(function (arg) {
+        switch (arg) {
+            case '--from-source':
+                options.fromSource = true;
+                break;
+            case '--clean':
+            case '--clean-generated':
+                options.cleanGenerated = true;
+                break;
+            default:
+                throw new Error('unknown argument: ' + arg);
+        }
+    });
+    return options;
+}
 
 function decodeScript(text) {
     return String(text || '')
@@ -20,8 +41,8 @@ function decodeScript(text) {
         .replace(/\\t/g, '\t');
 }
 
-function buildMachine(cpuType) {
-    var rom = assemble.assembleToBinary(path.join(__dirname, '../rom/monitor.S'), cpuType);
+function buildMachine(cpuType, options) {
+    var rom = assemble.assembleToBinary(path.join(__dirname, '../rom/monitor.S'), cpuType, options || {});
     var machine = new TestMachine({
         rom: rom,
         overlay: true,
@@ -45,13 +66,20 @@ function buildMachine(cpuType) {
 }
 
 function main() {
-    var state = buildMachine(cpuType);
-    var machine = state.machine;
-    var uart = state.uart;
+    var options = parseArgs(process.argv.slice(2));
+    var state;
+    var machine;
+    var uart;
     var script = decodeScript(process.env.J68_MONITOR_SCRIPT || '');
     var exitOnMonitor = process.env.J68_MONITOR_EXIT_ON_MONITOR === '1';
     var settledMonitorTicks = 0;
     var lineEditor = null;
+
+    if (options.cleanGenerated)
+        assemble.cleanGenerated();
+    state = buildMachine(cpuType, options);
+    machine = state.machine;
+    uart = state.uart;
 
     function flushOutput() {
         var text = uart.consumeTxString();

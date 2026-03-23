@@ -37,6 +37,37 @@ cd test && node runner.js
 node tools/monitor.js
 ```
 
+Build/run flow:
+
+- default CPU runner uses cached `test/r/*.r` artefacts and rebuilds only missing outputs:
+  ```sh
+  cd test && node runner.js
+  ```
+- explicit source rebuild path for CPU tests:
+  ```sh
+  cd test && node runner.js --from-source
+  ```
+- explicit clean + full CPU test rebuild:
+  ```sh
+  cd test && node runner.js --clean --rebuild-all
+  ```
+- direct CPU test artefact maintenance:
+  ```sh
+  cd test && node build.js --rebuild-missing
+  cd test && node build.js --rebuild-all
+  cd test && node build.js --clean --rebuild-all
+  ```
+- monitor startup uses cached generated ROM binaries by default:
+  ```sh
+  node tools/monitor.js
+  ```
+- explicit monitor ROM rebuild from source:
+  ```sh
+  node tools/monitor.js --from-source
+  ```
+
+Generated ROM binaries are cached under `build/generated/m68k/`.
+
 Typical monitor flow:
 
 ```text
