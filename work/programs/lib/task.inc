@@ -21,7 +21,8 @@ TCB_A3          equ 56
 TCB_A4          equ 60
 TCB_A5          equ 64
 TCB_A6          equ 68
-TCB_SIZE        equ 72
+TCB_ENTRY       equ 72
+TCB_SIZE        equ 76
 
 scheduler_start:
         bra.w   scheduler_select
@@ -84,7 +85,8 @@ scheduler_dispatch:
         tst.l   TCB_STARTED(a0)
         bne.s   scheduler_resume
         move.l  #1,TCB_STARTED(a0)
-        rts
+        movea.l TCB_ENTRY(a0),a3
+        jmp     (a3)
 
 scheduler_resume:
         movea.l a0,a2

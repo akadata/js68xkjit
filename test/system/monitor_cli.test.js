@@ -5,7 +5,7 @@ var childProcess = require('child_process');
 var path = require('path');
 
 (function testInteractiveLauncherPrintsBannerPromptAndAcceptsCommands() {
-    var output = childProcess.execFileSync('node', [ path.join(__dirname, '../../tools/monitor.js') ], {
+    var output = childProcess.execFileSync(process.execPath, [ path.join(__dirname, '../../tools/monitor.js') ], {
         cwd: path.join(__dirname, '../..'),
         encoding: 'latin1',
         env: Object.assign({}, process.env, {
@@ -19,7 +19,7 @@ var path = require('path');
 })();
 
 (function testInteractiveLauncherKeepsRunPromptOnNewLine() {
-    var output = childProcess.execFileSync('node', [ path.join(__dirname, '../../tools/monitor.js') ], {
+    var output = childProcess.execFileSync(process.execPath, [ path.join(__dirname, '../../tools/monitor.js') ], {
         cwd: path.join(__dirname, '../..'),
         encoding: 'latin1',
         env: Object.assign({}, process.env, {
@@ -32,7 +32,7 @@ var path = require('path');
 })();
 
 (function testInteractiveLauncherAllowsGuestPollingInput() {
-    var output = childProcess.execFileSync('node', [ path.join(__dirname, '../../tools/monitor.js') ], {
+    var output = childProcess.execFileSync(process.execPath, [ path.join(__dirname, '../../tools/monitor.js') ], {
         cwd: path.join(__dirname, '../..'),
         encoding: 'latin1',
         env: Object.assign({}, process.env, {
@@ -43,6 +43,18 @@ var path = require('path');
 
     assert.equal(output.indexOf('INPUT> hello world') !== -1, true, 'interactive launcher did not feed script input to polling guest');
     assert.equal(output.indexOf('ECHO: hello world') !== -1, true, 'interactive launcher did not echo guest input back');
+})();
+
+(function testInteractiveLauncherSupportsQuitCommand() {
+    var output = childProcess.execFileSync(process.execPath, [ path.join(__dirname, '../../tools/monitor.js') ], {
+        cwd: path.join(__dirname, '../..'),
+        encoding: 'latin1',
+        env: Object.assign({}, process.env, {
+            J68_MONITOR_SCRIPT: 'quit\\r'
+        })
+    });
+
+    assert.equal(/j68\nj68> quit\r?\nBYE\r?\n?$/.test(output), true, 'interactive launcher did not exit cleanly on quit');
 })();
 
 console.log('monitor_cli.test.js: ok');

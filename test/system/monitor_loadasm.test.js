@@ -19,15 +19,11 @@ var bootMonitorMachine = require('./support/boot_machine').bootMonitorMachine;
     var state = bootMonitorMachine();
     fs.mkdirSync(sourceDir, { recursive: true });
     fs.writeFileSync(sourceFile, [
-        '; count to ten with labels',
-        'a 00090000',
-        'start:',
+        '; count to ten',
         'moveq #0,d0',
-        '',
-        'loop:',
         'addq.w #1,d0',
         'cmpi.w #10,d0',
-        'bne loop',
+        'bne 00090002',
         'monitor',
         ''
     ].join('\n'));

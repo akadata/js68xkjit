@@ -60,6 +60,16 @@ function createLineEditor(options) {
         onLine(line + '\r');
     }
 
+    function resetTransientInput() {
+        state.line = '';
+        state.cursor = 0;
+        state.historyIndex = null;
+        state.historyDraft = '';
+        state.escape = '';
+        state.suppressLine = null;
+        state.suppressPos = 0;
+    }
+
     function handleHistoryUp() {
         if (state.history.length === 0)
             return;
@@ -227,6 +237,7 @@ function createLineEditor(options) {
         handleChunk: handleChunk,
         handleOutput: handleOutput,
         hasActiveLine: hasActiveLine,
+        resetTransientInput: resetTransientInput,
         _state: state
     };
 }

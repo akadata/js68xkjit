@@ -496,6 +496,13 @@ function resetMachine(machine) {
     return { output: '', suppressPrompt: true };
 }
 
+function quitMonitor(machine) {
+    machine.requestExit = true;
+    if (machine.monitor)
+        machine.monitor.active = false;
+    return 'BYE';
+}
+
 function startAssembler(machine, valueText) {
     return {
         output: '',
@@ -592,6 +599,7 @@ function execute(machine, line) {
                 'loadasm <addr> <name>',
                 'source          list source/ files',
                 'list            list save/ files',
+                'quit            exit monitor',
                 'reset          reboot monitor',
                 'i ti te tm     timer and irq',
                 'fx <reg|value> show 16.16 fixed-point value',
@@ -627,6 +635,8 @@ function execute(machine, line) {
             return sourceCommand(machine, trimmed.replace(/^source\s*/i, ''));
         if (trimmed.toLowerCase() === 'list')
             return listSaveFiles();
+        if (trimmed.toLowerCase() === 'quit')
+            return quitMonitor(machine);
         if (trimmed.toLowerCase() === 'reset')
             return resetMachine(machine);
         if (/^bench\s+/i.test(trimmed))

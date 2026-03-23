@@ -5,23 +5,35 @@ MONITOR_TRAP    equ $A000
 STACK_SIZE      equ 128
 
 start:
+        lea     tcb1(pc),a0
+        moveq   #18,d0
+clear_tcb1:
+        clr.l   (a0)+
+        dbra    d0,clear_tcb1
+
+        lea     tcb2(pc),a0
+        moveq   #18,d0
+clear_tcb2:
+        clr.l   (a0)+
+        dbra    d0,clear_tcb2
+
         lea     current_tcb(pc),a0
         lea     tcb2(pc),a1
         move.l  a1,(a0)
 
         lea     tcb1(pc),a0
-        lea     task1_entry(pc),a1
+        lea     task1_stack_end(pc),a1
         lea     task1(pc),a2
-        move.l  a2,(a1)
         move.l  a1,TCB_SP(a0)
+        move.l  a2,TCB_ENTRY(a0)
         move.l  #1,TCB_ACTIVE(a0)
         clr.l   TCB_STARTED(a0)
 
         lea     tcb2(pc),a0
-        lea     task2_entry(pc),a1
+        lea     task2_stack_end(pc),a1
         lea     task2(pc),a2
-        move.l  a2,(a1)
         move.l  a1,TCB_SP(a0)
+        move.l  a2,TCB_ENTRY(a0)
         move.l  #1,TCB_ACTIVE(a0)
         clr.l   TCB_STARTED(a0)
 
@@ -63,15 +75,11 @@ tcb2:
 
 task1_stack:
         ds.b    STACK_SIZE
-
-task1_entry:
-        dc.l    task1
+task1_stack_end:
 
 task2_stack:
         ds.b    STACK_SIZE
-
-task2_entry:
-        dc.l    task2
+task2_stack_end:
 
 text1:
         dc.b    'ACE',0

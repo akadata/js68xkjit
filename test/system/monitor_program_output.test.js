@@ -52,11 +52,12 @@ var bootMonitorMachine = require('./support/boot_machine').bootMonitorMachine;
     state.uart.consumeTxString();
     state.uart.enqueueRxString(
         'load 00092000 coop_regs.bin\r' +
+        'g 00092000\r' +
         'g 00092000\r'
     );
     state.machine.pollMonitor();
     var output = state.uart.txString();
-    assert.equal(output.indexOf('ABCDEF\r\n') !== -1, true, 'coop_regs.bin did not preserve A0 across yields');
+    assert.equal((output.match(/ABCDEF\r\n/g) || []).length, 2, 'coop_regs.bin did not rerun cleanly from the same loaded image');
     assert.equal(/j68> $/.test(output), true, 'coop_regs.bin did not return to the monitor prompt');
 })();
 
