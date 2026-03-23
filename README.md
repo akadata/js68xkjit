@@ -35,6 +35,7 @@ Current project shape:
 - `test/system/`
   - machine and monitor integration tests
 
+
 Quick start:
 
 ```sh
@@ -111,3 +112,16 @@ deferred invalid smoke test: 2
 
 r/callm.r [deferred invalid smoke test]: CALLM requires a valid module descriptor and transfer target; this local smoke test points A0 at the program image
 r/rtm.r [deferred invalid smoke test]: RTM requires a saved module state on the stack from a prior CALLM
+
+
+# Audio
+
+Yes we can now play Audio, its a little choppy and raw however this is a machine code demo, its not polished
+
+```
+./startmonitor.sh
+j68
+j68> loadasm 00090000 axelf_load.asm
+j68> g 00090000
+```
+**Is that not Axel F and is that not just fitting for a 68000 CPU**
