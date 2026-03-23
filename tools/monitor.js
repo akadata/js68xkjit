@@ -6,11 +6,32 @@ var TestMachine = require('../src/machine/test_machine');
 var Uart = require('../src/machine/devices/uart');
 var Intc = require('../src/machine/devices/intc');
 var Timer = require('../src/machine/devices/timer');
+var Rtc = require('../src/machine/devices/rtc');
+var Sound = require('../src/machine/devices/sound');
 var assemble = require('./support/assemble_m68k');
 var monitorCommands = require('../src/monitor/commands');
 var createLineEditor = require('./support/line_editor').createLineEditor;
 
 var cpuType = process.env.J68_CPU_TYPE || '68000';
+
+function parseUintEnv(name, fallback) {
+    if (!process.env[name])
+        return fallback >>> 0;
+    return parseInt(process.env[name], 0) >>> 0;
+}
+
+function resolveTimerMode() {
+    var mode = String(process.env.J68_TIMER_MODE || 'PAL').toUpperCase();
+    if (mode === 'PAL')
+        return { mode: 'PAL', crystalHz: 32768, frameHz: 50 };
+    if (mode === 'NTSC')
+        return { mode: 'NTSC', crystalHz: 32768, frameHz: 60 };
+    return {
+        mode: mode,
+        crystalHz: parseUintEnv('J68_RTC_HZ', parseUintEnv('J68_TIMER_HZ', 32768)),
+        frameHz: parseUintEnv('J68_FRAME_HZ', 50)
+    };
+}
 
 function parseArgs(argv) {
     var options = {
@@ -42,6 +63,7 @@ function decodeScript(text) {
 }
 
 function buildMachine(cpuType, options) {
+    var timerMode = resolveTimerMode();
     var rom = assemble.assembleToBinary(path.join(__dirname, '../rom/monitor.S'), cpuType, options || {});
     var machine = new TestMachine({
         rom: rom,
@@ -50,13 +72,28 @@ function buildMachine(cpuType, options) {
     });
     var uart = new Uart();
     var intc = new Intc();
-    var timer = new Timer({ irqLevel: 2, defaultReload: 1000 });
+    var timer = new Timer({
+        irqLevel: 2,
+        defaultReload: 1000,
+        baseHz: timerMode.crystalHz
+    });
+    var rtc = new Rtc({
+        crystalHz: timerMode.crystalHz,
+        frameHz: timerMode.frameHz,
+        mode: timerMode.mode
+    });
+    var sound = new Sound({
+        backend: process.env.J68_AUDIO_BACKEND || 'ffplay'
+    });
 
     machine.mapDevice(uart);
     machine.attachIntc(intc);
     machine.attachTimer(timer);
+    machine.mapDevice(rtc);
+    machine.mapDevice(sound);
     machine.attachMonitor(uart);
     machine.asyncMonitorRun = true;
+    machine.realTimeDevices = true;
     machine.reset();
 
     return {
@@ -75,6 +112,7 @@ function main() {
     var settledMonitorTicks = 0;
     var lineEditor = null;
     var lastMonitorActive = false;
+    var lastTick = process.hrtime.bigint();
 
     if (options.cleanGenerated)
         assemble.cleanGenerated();
@@ -131,6 +169,13 @@ function main() {
     });
 
     var loop = setInterval(function () {
+        var now = process.hrtime.bigint();
+        var elapsedSeconds = Number(now - lastTick) / 1000000000;
+        lastTick = now;
+        if (elapsedSeconds > 0.25)
+            elapsedSeconds = 0.25;
+        machine.advanceRealTime(elapsedSeconds);
+
         if (machine.monitor && machine.monitor.active)
             machine.pollMonitor();
         else if (machine.pendingRun)

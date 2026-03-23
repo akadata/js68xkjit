@@ -98,6 +98,7 @@ function TestMachine(options) {
     this.timers = [];
     this.nominalCpuHz = options.nominalCpuHz === undefined ? 1000000 : options.nominalCpuHz >>> 0;
     this.timerBaseHz = options.timerBaseHz === undefined ? 1000000 : options.timerBaseHz >>> 0;
+    this.realTimeDevices = false;
 
     this.attachContextBus();
 }
@@ -309,9 +310,17 @@ TestMachine.prototype.acceptInterrupt = function (level) {
 };
 
 TestMachine.prototype.advanceDevices = function (instructions) {
+    if (this.realTimeDevices)
+        return;
     if (instructions <= 0)
         return;
     this.bus.advance(instructions);
+};
+
+TestMachine.prototype.advanceRealTime = function (seconds) {
+    if (!(seconds > 0))
+        return;
+    this.bus.advanceTime(seconds);
 };
 
 TestMachine.prototype.pollInterrupts = function () {

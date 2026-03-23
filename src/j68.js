@@ -2078,8 +2078,8 @@ exports.j68 = (function () {
     j68.prototype.decode3 = function (pc, inst) {
         var dstReg = (inst >> 9) & 7;
         var dstMode = (inst >> 6) & 7;
+        var srcInst = inst & 0x1ff;
         if (dstMode === 1) {  // MOVEA.w
-            var srcInst = inst & 0x1ff;
             var ea = this.effectiveAddress(
                 pc, srcInst,
                 function (ea) { return 'c.a[' + dstReg + ']=c.xw(' + ea + '&0xffff);'; },
@@ -2088,17 +2088,25 @@ exports.j68 = (function () {
             );
             return { 'code': [ ea.code ], 'pc': ea.pc };
         }
-        var srcInst = inst & 0x1ff;
-        var ea = this.effectiveAddress(
+
+        var src = this.effectiveAddress(
             pc, srcInst,
-            function (ea) { return 'c.d[' + dstReg + ']=(' + ea + ')&0xffff;'; },
-            function (ea) { return 'c.d[' + dstReg + ']=c.l16(' + ea + ')&0xffff;'; },
+            function (ea) { return 'var src=(' + ea + ')&0xffff;'; },
+            function (ea) { return 'var src=c.l16(' + ea + ')&0xffff;'; },
             2
         );
+
+        var dst = this.effectiveAddressDst(
+            src.pc, dstMode, dstReg,
+            function (ea) { return ea + '=((' + ea + ')&0xffff0000)|src;'; },
+            function (ea) { return 'c.s16(' + ea + ',src);'; },
+            2
+        );
+
         return {
-            'code': [ ea.code ],
-            'out': this.flagMove('c.d[' + dstReg + ']'),
-            'pc': ea.pc
+            'code': [ src.code, dst.code ],
+            'out': this.flagMove('src'),
+            'pc': dst.pc
         };
     };
     

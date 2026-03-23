@@ -48,6 +48,11 @@ SYSTEM_TESTS=(
     test/system/monitor_program_input.test.js
     test/system/monitor_timer.test.js
     test/system/irq.test.js
+    test/system/audio.test.js
+    test/system/audio_timing.test.js
+    test/system/audio_backend.test.js
+    test/system/audio_wav_backend.test.js
+    test/system/rtc.test.js
 )
 
 BENCH_TEST="test/system/monitor_bench.test.js"

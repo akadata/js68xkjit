@@ -297,6 +297,14 @@ Bus.prototype.advance = function (cycles) {
     }
 };
 
+Bus.prototype.advanceTime = function (seconds) {
+    var devices = uniqueDevices(this.regions);
+    for (var i = 0; i < devices.length; ++i) {
+        if (typeof devices[i].advanceTime === 'function')
+            devices[i].advanceTime(seconds);
+    }
+};
+
 Bus.prototype.getInterruptLevel = function () {
     return this.resolveIpl();
 };

@@ -3,7 +3,7 @@
 These binaries target the current j68 lab machine and are meant to be loaded at
 `00090000` through the ROM monitor.
 
-Build:
+Build host-assembled demos (`.s` and `.asm`):
 
 ```sh
 work/programs/build.sh
@@ -35,6 +35,14 @@ Programs:
   - prints labeled 32-bit hex values
   - demonstrates the higher-level `puts_hex32` helper
   - returns to the monitor
+- `audio_note.bin`
+  - enables the first audio channel
+  - gates a short pulse note on and off
+  - returns to the monitor
+- `axelf.bin`
+  - two-channel audio sequencer demo based on the note content from `test_code/audio_axelf.js`
+  - channel 0 plays the lead line, channel 1 plays the bass line
+  - returns to the monitor after the phrase completes
 - `echo_line.bin`
   - polling input proof
   - prints a prompt
@@ -99,6 +107,12 @@ load 00090000 print_pi16.bin
 g 00090000
 
 load 00090000 print_status.bin
+g 00090000
+
+load 00090000 audio_note.bin
+g 00090000
+
+load 00090000 axelf.bin
 g 00090000
 
 load 00090000 echo_line.bin

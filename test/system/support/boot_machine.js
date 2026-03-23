@@ -3,6 +3,8 @@ var TestMachine = require('../../../src/machine/test_machine');
 var Uart = require('../../../src/machine/devices/uart');
 var Intc = require('../../../src/machine/devices/intc');
 var Timer = require('../../../src/machine/devices/timer');
+var Rtc = require('../../../src/machine/devices/rtc');
+var Sound = require('../../../src/machine/devices/sound');
 var assemble = require('./assemble_m68k');
 
 var cpuType = process.env.J68_CPU_TYPE || '68000';
@@ -31,7 +33,9 @@ function bootMachine(options) {
         machine: machine,
         uart: null,
         intc: null,
-        timer: null
+        timer: null,
+        rtc: null,
+        sound: null
     };
 
     if (options.uart !== false) {
@@ -47,9 +51,27 @@ function bootMachine(options) {
     if (options.timer) {
         state.timer = new Timer(Object.assign({
             irqLevel: 2,
-            defaultReload: 0x1000
+            defaultReload: 0x1000,
+            baseHz: 32768
         }, options.timerOptions || {}));
         machine.attachTimer(state.timer);
+    }
+
+    if (options.rtc) {
+        state.rtc = new Rtc(Object.assign({
+            crystalHz: 32768,
+            mode: 'PAL',
+            frameHz: 50
+        }, options.rtcOptions || {}));
+        machine.mapDevice(state.rtc);
+    }
+
+    if (options.sound) {
+        state.sound = new Sound(Object.assign({
+            backend: 'null',
+            baseHz: machine.nominalCpuHz >>> 0
+        }, options.soundOptions || {}));
+        machine.mapDevice(state.sound);
     }
 
     if (options.monitor && state.uart)

@@ -13,6 +13,7 @@ function Timer(options) {
     this.control = 0;
     this.pending = false;
     this.ticks = 0;
+    this.fractionalTicks = 0;
 }
 
 Timer.CONTROL_ENABLE = 0x01;
@@ -31,6 +32,7 @@ Timer.prototype.reset = function () {
     this.control = 0;
     this.pending = false;
     this.ticks = 0;
+    this.fractionalTicks = 0;
 };
 
 Timer.prototype.region = function () {
@@ -126,6 +128,17 @@ Timer.prototype.advance = function (ticks) {
             this.count = this.reload >>> 0;
         }
     }
+};
+
+Timer.prototype.advanceTime = function (seconds) {
+    if ((this.control & Timer.CONTROL_ENABLE) === 0 || !(seconds > 0))
+        return;
+    this.fractionalTicks += seconds * this.baseHz;
+    if (this.fractionalTicks < 1)
+        return;
+    var ticks = Math.floor(this.fractionalTicks);
+    this.fractionalTicks -= ticks;
+    this.advance(ticks >>> 0);
 };
 
 module.exports = Timer;
