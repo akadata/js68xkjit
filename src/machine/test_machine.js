@@ -289,6 +289,7 @@ TestMachine.prototype.reset = function () {
 TestMachine.prototype.acceptInterrupt = function (level) {
     var context = this.cpu.context;
     var vector = 24 + level;
+    var vectorBase = this.cpu.type === j68.j68.TYPE_MC68000 ? 0 : (context.vbr >>> 0);
     context.syncSr();
     var oldSr = context.sr & 0xffff;
     if ((oldSr & 0x2000) === 0) {
@@ -300,7 +301,7 @@ TestMachine.prototype.acceptInterrupt = function (level) {
     context.s32(context.a[7] + 2, context.pc >>> 0);
     context.ssp = context.a[7] >>> 0;
     context.setSr(((oldSr & 0x00ff) | 0x2000 | ((level & 7) << 8)) & 0xffff);
-    context.pc = this.read32(vector << 2) >>> 0;
+    context.pc = this.read32((vectorBase + (vector << 2)) >>> 0) >>> 0;
     context.c = {};
     context.halt = false;
     if (this.intc)

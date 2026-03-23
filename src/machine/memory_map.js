@@ -15,6 +15,13 @@ module.exports = {
     FAST_RAM_END:       0x009fffff,
     FAST_RAM_MAX_SIZE:  0x00800000,
 
+    // Reserved framebuffer region within CHIP RAM.
+    // This is not separate memory; it is a conventional subrange used by VIDEO
+    // unless software programs a different framebuffer base.
+    VIDEO_RAM_START:    0x00100000,
+    VIDEO_RAM_END:      0x0017ffff,
+    VIDEO_RAM_SIZE:     0x00080000,
+
     CIA_START:          0x00bf0000,
     CIA_END:            0x00bfffff,
 
@@ -53,13 +60,13 @@ module.exports = {
     GFX_END:            0x00de03ff,
     GFX_SIZE:           0x100,
 
-    CUDA_START:         0x00de0400,
-    CUDA_END:          0x00de04ff,
-    CUDA_SIZE:         0x100,
+    COMPUTE_START:      0x00de0400,
+    COMPUTE_END:        0x00de04ff,
+    COMPUTE_SIZE:       0x100,
 
-    AUDIO_START:        0x00de0500,
-    AUDIO_END:          0x00de05ff,
-    AUDIO_SIZE:         0x100,
+    DMA_START:          0x00de0500,
+    DMA_END:            0x00de05ff,
+    DMA_SIZE:           0x100,
 
     NET_START:          0x00de0600,
     NET_END:            0x00de06ff,
@@ -72,6 +79,25 @@ module.exports = {
     INPUT_START:        0x00de0800,
     INPUT_END:          0x00de08ff,
     INPUT_SIZE:         0x100,
+
+    DISK_START:         0x00de0900,
+    DISK_END:           0x00de09ff,
+    DISK_SIZE:          0x100,
+
+    IPC_START:          0x00de0a00,
+    IPC_END:            0x00de0aff,
+    IPC_SIZE:           0x100,
+
+
+
+    AUDIO_START:        0x00de1000,
+    AUDIO_END:          0x00de1fff,
+    AUDIO_SIZE:         0x1000,
+
+
+
+
+
 
     ROM_START:          0x00f80000,
     ROM_END:            0x00ffffff,
