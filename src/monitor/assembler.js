@@ -93,6 +93,9 @@ var ALLOWED = {
     divu: true
 };
 
+var currentSymbols = null;
+var LABEL_RE = '[.]?[a-z_][a-z0-9_]*';
+
 function isRegisterMaskOperand(text) {
     var operand = String(text || '').trim().toLowerCase();
     if (operand === '')
@@ -121,7 +124,7 @@ function parseLabelLine(line) {
     var match;
     if (cleaned === '')
         return null;
-    match = /^([a-z_][a-z0-9_]*):(?:\s*(.*))?$/i.exec(cleaned);
+    match = new RegExp('^(' + LABEL_RE + '):(?:\\s*(.*))?$', 'i').exec(cleaned);
     if (!match)
         return {
             label: '',
@@ -135,6 +138,7 @@ function parseLabelLine(line) {
 
 function parseImmediateLiteral(text) {
     var value = String(text || '').trim();
+    var expressionValue;
     if (/^-?[0-9]+$/i.test(value))
         return (parseInt(value, 10) | 0) >>> 0;
     if (/^-\$[0-9a-f]+$/i.test(value))
@@ -145,17 +149,24 @@ function parseImmediateLiteral(text) {
         return parseInt(value.slice(1), 16) >>> 0;
     if (/^0x[0-9a-f]+$/i.test(value))
         return parseInt(value, 16) >>> 0;
+    expressionValue = evaluateExpression(value);
+    if (expressionValue !== null)
+        return expressionValue >>> 0;
     throw new Error('invalid immediate: ' + value);
 }
 
 function parseAddressLiteral(text) {
     var value = String(text || '').trim();
+    var expressionValue;
     if (/^\$[0-9a-f]+$/i.test(value))
         return parseInt(value.slice(1), 16) >>> 0;
     if (/^0x[0-9a-f]+$/i.test(value))
         return parseInt(value, 16) >>> 0;
     if (/^[0-9a-f]+$/i.test(value))
         return parseInt(value, 16) >>> 0;
+    expressionValue = evaluateExpression(value);
+    if (expressionValue !== null)
+        return expressionValue >>> 0;
     throw new Error('invalid literal: ' + value);
 }
 
@@ -183,6 +194,10 @@ function validateLine(line) {
     var mnemonic = mnemonicOf(line);
     if (mnemonic === '')
         return;
+    if (/^org\b/i.test(cleanLine(line)))
+        return;
+    if (new RegExp('^' + LABEL_RE + '\\s+equ\\b', 'i').test(cleanLine(line)))
+        return;
     if (/^dc\.[bwl]\b/i.test(cleanLine(line)))
         return;
     if (!ALLOWED[mnemonic])
@@ -190,7 +205,80 @@ function validateLine(line) {
 }
 
 function isLabelName(text) {
-    return /^[a-z_][a-z0-9_]*$/i.test(String(text || '').trim());
+    return new RegExp('^' + LABEL_RE + '$', 'i').test(String(text || '').trim());
+}
+
+function symbolValue(text) {
+    var key = String(text || '').trim().toLowerCase();
+    if (!currentSymbols || !Object.prototype.hasOwnProperty.call(currentSymbols, key))
+        return null;
+    return currentSymbols[key] >>> 0;
+}
+
+function expressionAtom(text) {
+    var value = String(text || '').trim();
+    var symbol = symbolValue(value);
+    if (symbol !== null)
+        return symbol >>> 0;
+    if (/^-?[0-9]+$/i.test(value))
+        return (parseInt(value, 10) | 0) >>> 0;
+    if (/^-\$[0-9a-f]+$/i.test(value))
+        return (-parseInt(value.slice(2), 16)) >>> 0;
+    if (/^-0x[0-9a-f]+$/i.test(value))
+        return (-parseInt(value.slice(3), 16)) >>> 0;
+    if (/^\$[0-9a-f]+$/i.test(value))
+        return parseInt(value.slice(1), 16) >>> 0;
+    if (/^0x[0-9a-f]+$/i.test(value))
+        return parseInt(value, 16) >>> 0;
+    if (/^[0-9a-f]+$/i.test(value))
+        return parseInt(value, 16) >>> 0;
+    return null;
+}
+
+function evaluateExpression(text) {
+    var value = String(text || '').trim();
+    var orParts;
+    var i;
+    var result = 0;
+
+    if (value === '')
+        return null;
+    orParts = value.split('|');
+    for (i = 0; i < orParts.length; ++i) {
+        var sumText = orParts[i].trim();
+        var tokens;
+        var j;
+        var sum;
+        var sign;
+        if (sumText === '')
+            return null;
+        tokens = sumText.split(/([+-])/).map(function (token) {
+            return token.trim();
+        }).filter(Boolean);
+        sum = null;
+        sign = '+';
+        for (j = 0; j < tokens.length; ++j) {
+            var token = tokens[j];
+            var atom;
+            if (token === '+' || token === '-') {
+                sign = token;
+                continue;
+            }
+            atom = expressionAtom(token);
+            if (atom === null)
+                return null;
+            if (sum === null)
+                sum = atom >>> 0;
+            else if (sign === '+')
+                sum = (sum + atom) >>> 0;
+            else
+                sum = (sum - atom) >>> 0;
+        }
+        if (sum === null)
+            return null;
+        result = (result | sum) >>> 0;
+    }
+    return result >>> 0;
 }
 
 function branchTargetExpression(address, line) {
@@ -250,7 +338,7 @@ function resolveLabelReference(address, line, labels, allowUnknown) {
         return mnemonic + ' (0x' + hex(target, 8) + ').l';
     }
 
-    match = /^(dbra)\s+(d[0-7])\s*,\s*([a-z_][a-z0-9_]*)$/i.exec(cleaned);
+    match = new RegExp('^(dbra)\\s+(d[0-7])\\s*,\\s*(' + LABEL_RE + ')$', 'i').exec(cleaned);
     if (match) {
         label = match[3].toLowerCase();
         if (!Object.prototype.hasOwnProperty.call(labels, label)) {
@@ -264,21 +352,7 @@ function resolveLabelReference(address, line, labels, allowUnknown) {
         return match[1] + ' ' + match[2] + ', ' + hex(target, 8);
     }
 
-    match = /^(lea)\s+([a-z_][a-z0-9_]*)\s*,\s*(a[0-7])$/i.exec(cleaned);
-    if (match) {
-        label = match[2].toLowerCase();
-        if (!Object.prototype.hasOwnProperty.call(labels, label)) {
-            if (allowUnknown)
-                target = 0;
-            else
-                throw new Error('unknown label: ' + match[2]);
-        } else {
-            target = labels[label] >>> 0;
-        }
-        return match[1] + ' 0x' + hex(target, 8) + ',' + match[3];
-    }
-
-    match = /^(movea(?:\.l)?)\s+#([a-z_][a-z0-9_]*)\s*,\s*(a[0-7])$/i.exec(cleaned);
+    match = new RegExp('^(movea(?:\\.l)?)\\s+#(' + LABEL_RE + ')\\s*,\\s*(a[0-7])$', 'i').exec(cleaned);
     if (match) {
         label = match[2].toLowerCase();
         if (!Object.prototype.hasOwnProperty.call(labels, label)) {
@@ -452,7 +526,7 @@ function expectedInstructionLength(line) {
         case 'bsr':
         case 'bne':
         case 'beq':
-            return size === 'b' ? 2 : 4;
+            return size === 'b' || size === 's' ? 2 : 4;
         case 'jmp':
         case 'jsr':
         case 'pea':
@@ -602,7 +676,7 @@ function branchOpcode(mnemonic) {
 }
 
 function assembleBranch(address, line) {
-    var match = /^(bra|bsr|bne|beq)(?:\.(b|w))?\s+(.+)$/i.exec(cleanLine(line));
+    var match = /^(bra|bsr|bne|beq)(?:\.(b|s|w))?\s+(.+)$/i.exec(cleanLine(line));
     var size;
     var target;
     var displacement;
@@ -616,7 +690,7 @@ function assembleBranch(address, line) {
         target = parseAddressLiteral(match[3]);
     opcode = branchOpcode(match[1]);
 
-    if (size === 'b') {
+    if (size === 'b' || size === 's') {
         displacement = (target - ((address + 2) >>> 0)) | 0;
         if (displacement < -128 || displacement > 127 || displacement === 0)
             throw new Error('branch target out of range for .b');
@@ -1358,8 +1432,18 @@ function assembleManual(address, line) {
             var tasEa = parseEaOperand(operands[0], 'b', false);
             return appendEa([ encodeWord(0x4ac0 | ((tasEa.mode & 7) << 3) | (tasEa.reg & 7)) ], tasEa);
         case 'lea':
+            var leaReg = parseRegister(operands[1], 'a');
+            if (leaReg !== null && isLabelName(operands[0])) {
+                var leaLabelValue = symbolValue(operands[0]);
+                if (leaLabelValue === null)
+                    leaLabelValue = 0;
+                return concatBytes([
+                    encodeWord(0x41fa | ((leaReg & 7) << 9)),
+                    encodeWord((leaLabelValue - ((address + 2) >>> 0)) & 0xffff)
+                ]);
+            }
             var leaEa = parseEaOperand(operands[0], 'l', false);
-            return appendEa([ encodeWord(0x41c0 | ((parseRegister(operands[1], 'a') & 7) << 9) | ((leaEa.mode & 7) << 3) | (leaEa.reg & 7)) ], leaEa);
+            return appendEa([ encodeWord(0x41c0 | ((leaReg & 7) << 9) | ((leaEa.mode & 7) << 3) | (leaEa.reg & 7)) ], leaEa);
         case 'pea':
             var peaEa = parseEaOperand(operands[0], 'l', false);
             return appendEa([ encodeWord(0x4840 | ((peaEa.mode & 7) << 3) | (peaEa.reg & 7)) ], peaEa);
@@ -1534,11 +1618,37 @@ function collectSourceEntries(address, text) {
                 continue;
             }
         }
+        match = /^org\s+(.+)$/i.exec(cleaned);
+        if (match) {
+            entries.push({
+                line: cleaned,
+                label: '',
+                instruction: '',
+                directive: 'org',
+                expression: match[1].trim()
+            });
+            firstLine = false;
+            continue;
+        }
+        match = new RegExp('^(' + LABEL_RE + ')\\s+equ\\s+(.+)$', 'i').exec(cleaned);
+        if (match) {
+            entries.push({
+                line: cleaned,
+                label: '',
+                instruction: '',
+                directive: 'equ',
+                name: match[1].toLowerCase(),
+                expression: match[2].trim()
+            });
+            firstLine = false;
+            continue;
+        }
         parsed = parseLabelLine(cleaned);
         entries.push({
             line: cleaned,
             label: parsed.label,
-            instruction: parsed.instruction
+            instruction: parsed.instruction,
+            directive: ''
         });
         firstLine = false;
     }
@@ -1555,55 +1665,87 @@ function assembleText(address, text) {
     var output = [];
     var pc = collected.baseAddress >>> 0;
     var i;
-    for (i = 0; i < collected.entries.length; ++i) {
-        if (collected.entries[i].instruction)
-            validateLine(collected.entries[i].instruction);
-    }
-
-    for (i = 0; i < collected.entries.length; ++i) {
-        var entry = collected.entries[i];
-        var resolved;
-        var bytes;
-
-        if (entry.label) {
-            if (Object.prototype.hasOwnProperty.call(labels, entry.label))
-                throw new Error('duplicate label: ' + entry.label);
-            labels[entry.label] = pc >>> 0;
+    var oldSymbols = currentSymbols;
+    currentSymbols = labels;
+    try {
+        for (i = 0; i < collected.entries.length; ++i) {
+            if (collected.entries[i].instruction)
+                validateLine(collected.entries[i].instruction);
         }
 
-        if (!entry.instruction)
-            continue;
+        for (i = 0; i < collected.entries.length; ++i) {
+            var entry = collected.entries[i];
+            var resolved;
+            var bytes;
+            var value;
 
-        entry.address = pc >>> 0;
-        resolved = resolveLabelReference(entry.address, entry.instruction, labels, true);
-        bytes = assembleLine(entry.address, resolved);
-        pc = (pc + (bytes ? bytes.length : 0)) >>> 0;
+            if (entry.directive === 'org') {
+                value = parseAddressLiteral(entry.expression) >>> 0;
+                if (i === 0)
+                    collected.baseAddress = value >>> 0;
+                pc = value >>> 0;
+                continue;
+            }
+
+            if (entry.directive === 'equ') {
+                if (Object.prototype.hasOwnProperty.call(labels, entry.name))
+                    throw new Error('duplicate symbol: ' + entry.name);
+                labels[entry.name] = parseImmediateLiteral(entry.expression) >>> 0;
+                continue;
+            }
+
+            if (entry.label) {
+                if (Object.prototype.hasOwnProperty.call(labels, entry.label))
+                    throw new Error('duplicate label: ' + entry.label);
+                labels[entry.label] = pc >>> 0;
+            }
+
+            if (!entry.instruction)
+                continue;
+
+            entry.address = pc >>> 0;
+            resolved = resolveLabelReference(entry.address, entry.instruction, labels, true);
+            bytes = assembleLine(entry.address, resolved);
+            pc = (pc + (bytes ? bytes.length : 0)) >>> 0;
+        }
+
+        pc = collected.baseAddress >>> 0;
+        for (i = 0; i < collected.entries.length; ++i) {
+            var finalEntry = collected.entries[i];
+            var finalBytes;
+            var j;
+            var orgValue;
+
+            if (finalEntry.directive === 'org') {
+                orgValue = parseAddressLiteral(finalEntry.expression) >>> 0;
+                pc = orgValue >>> 0;
+                continue;
+            }
+
+            if (finalEntry.directive === 'equ')
+                continue;
+
+            finalEntry.address = pc >>> 0;
+
+            if (!finalEntry.instruction)
+                continue;
+
+            finalBytes = assembleLine(finalEntry.address, resolveLabelReference(finalEntry.address, finalEntry.instruction, labels, false));
+            if (!finalBytes)
+                continue;
+            for (j = 0; j < finalBytes.length; ++j)
+                output.push(finalBytes[j]);
+            pc = (pc + finalBytes.length) >>> 0;
+        }
+
+        return {
+            address: collected.baseAddress >>> 0,
+            bytes: Uint8Array.from(output),
+            length: (pc - (collected.baseAddress >>> 0)) >>> 0
+        };
+    } finally {
+        currentSymbols = oldSymbols;
     }
-
-    pc = collected.baseAddress >>> 0;
-    for (i = 0; i < collected.entries.length; ++i) {
-        var finalEntry = collected.entries[i];
-        var finalBytes;
-        var j;
-
-        finalEntry.address = pc >>> 0;
-
-        if (!finalEntry.instruction)
-            continue;
-
-        finalBytes = assembleLine(finalEntry.address, resolveLabelReference(finalEntry.address, finalEntry.instruction, labels, false));
-        if (!finalBytes)
-            continue;
-        for (j = 0; j < finalBytes.length; ++j)
-            output.push(finalBytes[j]);
-        pc = (pc + finalBytes.length) >>> 0;
-    }
-
-    return {
-        address: collected.baseAddress >>> 0,
-        bytes: Uint8Array.from(output),
-        length: (pc - (collected.baseAddress >>> 0)) >>> 0
-    };
 }
 
 function createSession(machine, address, helpers) {

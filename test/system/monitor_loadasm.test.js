@@ -231,6 +231,16 @@ var bootMonitorMachine = require('./support/boot_machine').bootMonitorMachine;
     assert.equal(result.bytes.length, result.length, 'speech.asm byte count did not match reported length');
 })();
 
+(function testAssembleTextSupportsAxelfSource() {
+    var text = fs.readFileSync(path.join(sourceDir, 'axelf.asm'), 'utf8');
+    var result = assembler.assembleText(0x00090000, text);
+    var native = fs.readFileSync(path.resolve(__dirname, '../../save/axelf.bin'));
+
+    assert.equal(result.length > 0, true, 'axelf.asm did not assemble');
+    assert.equal(result.bytes.length, result.length, 'axelf.asm byte count did not match reported length');
+    assert.equal(Buffer.from(result.bytes).equals(native), true, 'axelf.asm did not assemble to the current axelf.bin image');
+})();
+
 (function testLoadAsmSpeechSourceRunsWithNullAudioBackend() {
     var state = bootMonitorMachine({
         sound: true,
