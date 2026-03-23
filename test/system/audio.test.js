@@ -76,4 +76,42 @@ var bootMachine = require('./support/boot_machine').bootMachine;
     assert.equal(machine.read16(base + registers.CH_ENV_LEVEL), 0, 'second channel envelope level did not decay to zero after release');
 })();
 
+(function testNoiseWaveformProducesChangingSamples() {
+    var state = bootMachine({
+        monitor: false,
+        uart: false,
+        sound: true,
+        bootBlocks: 0,
+        soundOptions: {
+            backend: 'null',
+            sampleRate: 8000,
+            baseHz: 32768
+        }
+    });
+    var machine = state.machine;
+    var sound = state.sound;
+    var base = memoryMap.AUDIO_START;
+    var noiseCtrl = registers.CH_CTRL_BITS.ENABLE |
+        registers.CH_CTRL_BITS.GATE |
+        (registers.CH_WAVE_TYPES.NOISE << registers.CH_WAVE_SHIFT);
+    var samples = [];
+    var i;
+
+    machine.write16(base + registers.CH_INDEX, 0);
+    machine.write16(base + registers.MASTER_VOL, 0x00ff);
+    machine.write16(base + registers.CH_FREQ_HI, 0x6000);
+    machine.write16(base + registers.CH_FREQ_LO, 0x0000);
+    machine.write16(base + registers.CH_AD, 0x11);
+    machine.write16(base + registers.CH_SR, 0xf1);
+    machine.write16(base + registers.CH_VOL, 0x00c0);
+    machine.write16(base + registers.GLOBAL_CTRL, registers.GLOBAL_CTRL_BITS.ENABLE);
+    machine.write16(base + registers.CH_CTRL, noiseCtrl);
+
+    for (i = 0; i < 32; ++i)
+        samples.push(sound.generateSample());
+
+    assert.equal(samples.some(function (value) { return value > 0; }), true, 'noise waveform never produced a positive sample');
+    assert.equal(samples.some(function (value) { return value < 0; }), true, 'noise waveform never produced a negative sample');
+})();
+
 console.log('audio.test.js: ok');

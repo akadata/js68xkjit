@@ -129,6 +129,21 @@ function dumpMemory(machine, address, count) {
     return hex(addr, 8) + ': ' + bytes.join(' ');
 }
 
+function parseDisassembleArgs(text, defaultCount) {
+    var parts = String(text || '').trim().split(/\s+/).filter(Boolean);
+    var address;
+    var count;
+
+    if (parts.length < 1)
+        throw new Error('usage: d <addr> [count]');
+    address = parseAddress(parts[0]);
+    count = parts.length > 1 ? parseNumber(parts[1]) : defaultCount;
+    return {
+        address: address >>> 0,
+        count: count >>> 0
+    };
+}
+
 function patchMemory(machine, address, dataText) {
     var bytes = parseDataTokens(dataText);
     var addr = address >>> 0;
@@ -589,6 +604,7 @@ function execute(machine, line) {
                 'm <addr>       dump memory',
                 'm <addr>=...   patch memory',
                 'u <addr>       disassemble',
+                'd <addr> [n]   disassemble/list',
                 'a <addr>       assemble',
                 'g <addr>       run',
                 'gl <addr>      long run',
@@ -619,8 +635,14 @@ function execute(machine, line) {
         }
         if (/^m\s+/i.test(trimmed))
             return dumpMemory(machine, parseAddress(trimmed.replace(/^m\s+/i, '')), 16);
-        if (/^u\s+/i.test(trimmed))
-            return disassembler.disassemble(machine, parseAddress(trimmed.replace(/^u\s+/i, '')), 5);
+        if (/^u\s+/i.test(trimmed)) {
+            var uArgs = parseDisassembleArgs(trimmed.replace(/^u\s+/i, ''), 5);
+            return disassembler.disassemble(machine, uArgs.address, uArgs.count);
+        }
+        if (/^d\s+/i.test(trimmed)) {
+            var dArgs = parseDisassembleArgs(trimmed.replace(/^d\s+/i, ''), 32);
+            return disassembler.disassemble(machine, dArgs.address, dArgs.count);
+        }
         if (/^a\s+/i.test(trimmed))
             return startAssembler(machine, trimmed.replace(/^a\s+/i, ''));
         if (/^save\s+/i.test(trimmed))

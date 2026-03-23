@@ -150,10 +150,12 @@ function createChannel() {
         vol: 0,
         pan: 0x80,
         phase: 0,
+        phaseMsb: 0,
         env: 0,
         envState: 'idle',
         stateBits: 0,
-        releaseStep: 0
+        releaseStep: 0,
+        noiseLfsr: 0x5a17
     };
 }
 
@@ -421,10 +423,20 @@ Sound.prototype.write16 = function (address, value) {
 Sound.prototype.waveSample = function (channel) {
     var wave = (channel.ctrl & registerMap.CH_WAVE_MASK) >> registerMap.CH_WAVE_SHIFT;
     var phase = channel.phase >>> 0;
+    var msb = (phase >>> 31) & 1;
     if (wave === WAVE.SAW)
         return ((phase / 0x80000000) - 1);
     if (wave === WAVE.SINE)
         return Math.sin((phase / 0xffffffff) * Math.PI * 2);
+    if (wave === WAVE.NOISE) {
+        if (msb !== channel.phaseMsb) {
+            var feedback = ((channel.noiseLfsr ^ (channel.noiseLfsr >>> 2) ^ (channel.noiseLfsr >>> 3) ^ (channel.noiseLfsr >>> 5)) & 1);
+            channel.noiseLfsr = ((channel.noiseLfsr >>> 1) | (feedback << 15)) & 0xffff;
+            channel.phaseMsb = msb;
+        }
+        return (channel.noiseLfsr & 1) ? 1 : -1;
+    }
+    channel.phaseMsb = msb;
     var threshold = ((channel.pulseWidth & 0xffff) << 16) >>> 0;
     if (threshold === 0)
         threshold = 0x80000000;

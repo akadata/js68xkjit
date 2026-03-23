@@ -1,0 +1,754 @@
+.
+├── AGENTS.md
+├── a.out
+├── artwork
+│   └── nmemonic-js68xkjit-logo.png
+├── BENCHMARK.md
+├── build
+│   └── generated
+│       └── m68k
+│           ├── 68000
+│           │   └── rom
+│           │       ├── boot_banner.bin
+│           │       ├── monitor.bin
+│           │       └── timer_irq.bin
+│           ├── 68020
+│           │   └── rom
+│           │       └── monitor.bin
+│           ├── 68030
+│           │   └── rom
+│           │       └── monitor.bin
+│           └── 68040
+│               └── rom
+│                   └── monitor.bin
+├── BUILD.md
+├── coop_demo.sh
+├── coop_loop.sh
+├── coop_regs.sh
+├── docs
+│   ├── COVERAGE.md
+│   ├── CPUTASKS.md
+│   ├── FAMILY_MATRIX.md
+│   ├── IMPLEMENTATION.md
+│   ├── MACHINE.md
+│   ├── MONITOR.md
+│   ├── PROGRESS.md
+│   └── SUMMARY.md
+├── HANDOVER.md
+├── LICENSE
+├── loadasm.sh
+├── loadbin.sh
+├── play_axelf.sh
+├── play_sound.sh
+├── README.md
+├── rom
+│   ├── boot_banner.S
+│   ├── monitor.S
+│   └── timer_irq.S
+├── run_helloworld.sh
+├── runtests.sh
+├── save
+│   ├── 68K-Monitor.bin
+│   ├── audio_note.bin
+│   ├── axelf.bin
+│   ├── coop_demo.bin
+│   ├── coop_regs.bin
+│   ├── count10.bin
+│   ├── echo_line.bin
+│   ├── hello_uart.bin
+│   ├── j68-audio.wav
+│   ├── pi16_nilakantha.bin
+│   ├── print_pi16.bin
+│   ├── print_status.bin
+│   ├── puthex.bin
+│   ├── ram_checksum.bin
+│   └── test.bin
+├── source
+│   ├── axelf.asm
+│   ├── axelf_load.asm
+│   ├── count10.asm
+│   ├── hello10.asm
+│   ├── hello_uart.asm
+│   ├── helloworld.asm
+│   └── speech.asm
+├── src
+│   ├── instructions
+│   │   ├── abcd.js
+│   │   ├── line4.js
+│   │   ├── line5.js
+│   │   ├── line8.js
+│   │   ├── lineE.js
+│   │   ├── movem.js
+│   │   ├── nbcd.js
+│   │   └── shift_rotate.js
+│   ├── j68.js
+│   ├── machine
+│   │   ├── bus
+│   │   │   ├── addressing.js
+│   │   │   ├── errors.js
+│   │   │   ├── index.js
+│   │   │   ├── memory_region.js
+│   │   │   └── region.js
+│   │   ├── devices
+│   │   │   ├── intc.js
+│   │   │   ├── rtc.js
+│   │   │   ├── sound.js
+│   │   │   ├── timer.js
+│   │   │   ├── uart.js
+│   │   │   └── video.js
+│   │   ├── memory_map.js
+│   │   ├── registers
+│   │   │   ├── audio.js
+│   │   │   ├── dma.js
+│   │   │   └── ipc.js
+│   │   └── test_machine.js
+│   ├── monitor
+│   │   ├── assembler.js
+│   │   ├── benchmarks.js
+│   │   ├── command_loop.js
+│   │   ├── commands.js
+│   │   └── disassembler.js
+│   └── tools
+│       └── m68k_toolchain.js
+├── startmonitor.sh
+├── TASKLIST.md
+├── TASKS.md
+├── test
+│   ├── add_abcd.py
+│   ├── add_andi.py
+│   ├── add_decodeD.py
+│   ├── analyze.py
+│   ├── asm
+│   │   ├── abcd.s
+│   │   ├── add_abs_l.s
+│   │   ├── adda_l.s
+│   │   ├── adda_w.s
+│   │   ├── add_b_d_mem.s
+│   │   ├── add_b.s
+│   │   ├── addi_b.s
+│   │   ├── addi_l.s
+│   │   ├── addi_w.s
+│   │   ├── add_l_d_mem.s
+│   │   ├── add_l.s
+│   │   ├── addq_1.s
+│   │   ├── addq_a.s
+│   │   ├── addq_b_mem.s
+│   │   ├── addq_b.s
+│   │   ├── addq_l_mem.s
+│   │   ├── addq_l.s
+│   │   ├── addq_w_mem.s
+│   │   ├── addq_w.s
+│   │   ├── add_w_d_mem.s
+│   │   ├── add_w.s
+│   │   ├── addx_b.s
+│   │   ├── addx_l.s
+│   │   ├── addx_w.s
+│   │   ├── and_b_di.s
+│   │   ├── and_b_d_mem.s
+│   │   ├── andi_b.s
+│   │   ├── andi_l.s
+│   │   ├── andi_to_ccr.s
+│   │   ├── andi_to_sr.s
+│   │   ├── andi_w.s
+│   │   ├── and_l_di.s
+│   │   ├── and_l_d_mem.s
+│   │   ├── and_w_di.s
+│   │   ├── and_w_d_mem.s
+│   │   ├── asl_d.s
+│   │   ├── asl_m.s
+│   │   ├── asr_d.s
+│   │   ├── asr_m.s
+│   │   ├── bcc_cc.s
+│   │   ├── bcc_cs.s
+│   │   ├── bcc_eq.s
+│   │   ├── bcc_ge.s
+│   │   ├── bcc_gt.s
+│   │   ├── bcc_hi.s
+│   │   ├── bcc_le.s
+│   │   ├── bcc_ls.s
+│   │   ├── bcc_lt.s
+│   │   ├── bcc_mi.s
+│   │   ├── bcc_ne.s
+│   │   ├── bcc_pl.s
+│   │   ├── bcc_vc.s
+│   │   ├── bcc_vs.s
+│   │   ├── bchg_d_d.s
+│   │   ├── bclr_d_d.s
+│   │   ├── bfchg.s
+│   │   ├── bfclr.s
+│   │   ├── bfexts.s
+│   │   ├── bfextu.s
+│   │   ├── bfffo.s
+│   │   ├── bf_fullfmt.s
+│   │   ├── bfins.s
+│   │   ├── bfset.s
+│   │   ├── bftst.s
+│   │   ├── bkpt.s
+│   │   ├── bra_1.s
+│   │   ├── bra_2.s
+│   │   ├── bra_3.s
+│   │   ├── bra_l.s
+│   │   ├── bra_s.s
+│   │   ├── bset_d_d.s
+│   │   ├── bsr_l.s
+│   │   ├── bsr_s.s
+│   │   ├── btst_d_d.s
+│   │   ├── callm.s
+│   │   ├── cas2_l.s
+│   │   ├── cas_b.s
+│   │   ├── cas_l.s
+│   │   ├── cas_w.s
+│   │   ├── chk2_l.s
+│   │   ├── chk2_w.s
+│   │   ├── chk.s
+│   │   ├── cinv.s
+│   │   ├── clr_b.s
+│   │   ├── clr_l.s
+│   │   ├── clr_w.s
+│   │   ├── cmp2_l.s
+│   │   ├── cmp2_w.s
+│   │   ├── cmpa_l.s
+│   │   ├── cmpa_w.s
+│   │   ├── cmp_b.s
+│   │   ├── cmpi_b.s
+│   │   ├── cmpi_l.s
+│   │   ├── cmpi_w.s
+│   │   ├── cmp_l.s
+│   │   ├── cmpm_b.s
+│   │   ├── cmpm_l.s
+│   │   ├── cmpm_w.s
+│   │   ├── cmp_w.s
+│   │   ├── cpush.s
+│   │   ├── dbcc.s
+│   │   ├── dbra.s
+│   │   ├── divs.s
+│   │   ├── divu.s
+│   │   ├── eor_b_di.s
+│   │   ├── eor_b_d_mem.s
+│   │   ├── eori_b.s
+│   │   ├── eori_l.s
+│   │   ├── eori_to_ccr.s
+│   │   ├── eori_to_sr.s
+│   │   ├── eori_w.s
+│   │   ├── eor_l_di.s
+│   │   ├── eor_l_d_mem.s
+│   │   ├── eor_w_di.s
+│   │   ├── eor_w_d_mem.s
+│   │   ├── exg_aa.s
+│   │   ├── exg_da.s
+│   │   ├── exg_dd.s
+│   │   ├── extb.s
+│   │   ├── ext_l.s
+│   │   ├── ext_w.s
+│   │   ├── fline.s
+│   │   ├── illegal.s
+│   │   ├── jmp.s
+│   │   ├── jsr.s
+│   │   ├── lea.s
+│   │   ├── link.s
+│   │   ├── lsl_d.s
+│   │   ├── lsl_m.s
+│   │   ├── lsr_d.s
+│   │   ├── lsr_m.s
+│   │   ├── move16_mem_mem.s
+│   │   ├── move16_mem_reg.s
+│   │   ├── movea_l.s
+│   │   ├── movea_w.s
+│   │   ├── move_b_ai.s
+│   │   ├── move_b_di.s
+│   │   ├── move_b_pi.s
+│   │   ├── move_ccr_1.s
+│   │   ├── movec_c_to_r.s
+│   │   ├── movec_privtrap.s
+│   │   ├── movec_r_to_c.s
+│   │   ├── movec_super.s
+│   │   ├── move_from_sr.s
+│   │   ├── move_from_usp.s
+│   │   ├── move_index_1.s
+│   │   ├── move_l_ai.s
+│   │   ├── move_l_di.s
+│   │   ├── move_l_pi.s
+│   │   ├── move_mem_1.s
+│   │   ├── movem_fullfmt_l.s
+│   │   ├── movem_l.s
+│   │   ├── movem_w.s
+│   │   ├── movep_l_d_mem.s
+│   │   ├── movep_l_mem_d.s
+│   │   ├── movep_w_d_mem.s
+│   │   ├── movep_w_mem_d.s
+│   │   ├── moveq_1.s
+│   │   ├── moveq_2.s
+│   │   ├── moveq_3.s
+│   │   ├── moveq_4.s
+│   │   ├── moveq_neg.s
+│   │   ├── moveq_pos.s
+│   │   ├── move_reg_1.s
+│   │   ├── moves_b.s
+│   │   ├── moves_l.s
+│   │   ├── moves_privtrap.s
+│   │   ├── moves_super.s
+│   │   ├── moves_w.s
+│   │   ├── move_to_ccr.s
+│   │   ├── move_to_sr.s
+│   │   ├── move_to_usp.s
+│   │   ├── move_w_ai.s
+│   │   ├── move_w_di.s
+│   │   ├── move_w_preserve_upper.s
+│   │   ├── muls.s
+│   │   ├── mulu.s
+│   │   ├── nbcd.s
+│   │   ├── neg_b.s
+│   │   ├── neg_l.s
+│   │   ├── neg_w.s
+│   │   ├── negx_b.s
+│   │   ├── negx_l.s
+│   │   ├── negx_w.s
+│   │   ├── nop.s
+│   │   ├── not_b.s
+│   │   ├── not_l.s
+│   │   ├── not_w.s
+│   │   ├── or_abs_l_mem.s
+│   │   ├── or_b_di.s
+│   │   ├── or_b_d_mem.s
+│   │   ├── ori_b.s
+│   │   ├── ori_l.s
+│   │   ├── ori_to_ccr.s
+│   │   ├── ori_to_sr.s
+│   │   ├── ori_w.s
+│   │   ├── or_l_di.s
+│   │   ├── or_l_d_mem.s
+│   │   ├── or_w_di.s
+│   │   ├── or_w_d_mem.s
+│   │   ├── pack.s
+│   │   ├── pea.s
+│   │   ├── pflusha.s
+│   │   ├── pflush.s
+│   │   ├── pload.s
+│   │   ├── pmove_d16.s
+│   │   ├── pmove.s
+│   │   ├── ptest.s
+│   │   ├── reset.s
+│   │   ├── rol_d.s
+│   │   ├── rol_m.s
+│   │   ├── ror_d.s
+│   │   ├── ror_m.s
+│   │   ├── roxl_d.s
+│   │   ├── roxl_m.s
+│   │   ├── roxr_d.s
+│   │   ├── roxr_m.s
+│   │   ├── rtd.s
+│   │   ├── rtd_stack.s
+│   │   ├── rte_frame.s
+│   │   ├── rte_privtrap.s
+│   │   ├── rte.s
+│   │   ├── rtm.s
+│   │   ├── rtr_frame.s
+│   │   ├── rtr.s
+│   │   ├── rts.s
+│   │   ├── sbcd.s
+│   │   ├── scc.s
+│   │   ├── seq.s
+│   │   ├── sne.s
+│   │   ├── stop_privtrap.s
+│   │   ├── stop.s
+│   │   ├── stop_super.s
+│   │   ├── subal_1.s
+│   │   ├── suba_l.s
+│   │   ├── suba_w.s
+│   │   ├── sub_b_d_mem.s
+│   │   ├── sub_b.s
+│   │   ├── subi_b.s
+│   │   ├── subi_l.s
+│   │   ├── subi_w.s
+│   │   ├── sub_l_d_mem.s
+│   │   ├── sub_l.s
+│   │   ├── subq_a.s
+│   │   ├── subq_b_mem.s
+│   │   ├── subq_b.s
+│   │   ├── subq_l_mem.s
+│   │   ├── subq_l.s
+│   │   ├── subq_w_mem.s
+│   │   ├── subq_w.s
+│   │   ├── sub_w_d_mem.s
+│   │   ├── sub_w.s
+│   │   ├── subx_b.s
+│   │   ├── subx_l.s
+│   │   ├── subx_w.s
+│   │   ├── swap.s
+│   │   ├── tas.s
+│   │   ├── TODO
+│   │   ├── trap_a.s
+│   │   ├── trapcc.s
+│   │   ├── trap.s
+│   │   ├── trapv.s
+│   │   ├── tst_b.s
+│   │   ├── tst_l_nonzero.s
+│   │   ├── tst_l.s
+│   │   ├── tst_w.s
+│   │   ├── unlk.s
+│   │   └── unpk.s
+│   ├── build.js
+│   ├── build.sh
+│   ├── decode4_new.js
+│   ├── decode_stubs.js
+│   ├── fix_add.py
+│   ├── fix_addq.py
+│   ├── fix_andi2.py
+│   ├── fix_andi3.py
+│   ├── fix_bcc.py
+│   ├── fix_j68.py
+│   ├── gen_asm.py
+│   ├── gen_missing_asm.py
+│   ├── instruction_meta.json
+│   ├── phase1.skip
+│   ├── processor_runner.js
+│   ├── r
+│   │   ├── abcd.r
+│   │   ├── add_abs_l.r
+│   │   ├── adda_l.r
+│   │   ├── adda_w.r
+│   │   ├── add_b_d_mem.r
+│   │   ├── add_b.r
+│   │   ├── addi_b.r
+│   │   ├── addi_l.r
+│   │   ├── addi_w.r
+│   │   ├── add_l_d_mem.r
+│   │   ├── add_l.r
+│   │   ├── addq_1.r
+│   │   ├── addq_a.r
+│   │   ├── addq_b_mem.r
+│   │   ├── addq_b.r
+│   │   ├── addq_l_mem.r
+│   │   ├── addq_l.r
+│   │   ├── addq_w_mem.r
+│   │   ├── addq_w.r
+│   │   ├── add_w_d_mem.r
+│   │   ├── add_w.r
+│   │   ├── addx_b.r
+│   │   ├── addx_l.r
+│   │   ├── addx_w.r
+│   │   ├── and_b_di.r
+│   │   ├── and_b_d_mem.r
+│   │   ├── andi_b.r
+│   │   ├── andi_l.r
+│   │   ├── andi_to_ccr.r
+│   │   ├── andi_to_sr.r
+│   │   ├── andi_w.r
+│   │   ├── and_l_di.r
+│   │   ├── and_l_d_mem.r
+│   │   ├── and_w_di.r
+│   │   ├── and_w_d_mem.r
+│   │   ├── asl_d.r
+│   │   ├── asl_m.r
+│   │   ├── asr_d.r
+│   │   ├── asr_m.r
+│   │   ├── bcc_cc.r
+│   │   ├── bcc_cs.r
+│   │   ├── bcc_eq.r
+│   │   ├── bcc_ge.r
+│   │   ├── bcc_gt.r
+│   │   ├── bcc_hi.r
+│   │   ├── bcc_le.r
+│   │   ├── bcc_ls.r
+│   │   ├── bcc_lt.r
+│   │   ├── bcc_mi.r
+│   │   ├── bcc_ne.r
+│   │   ├── bcc_pl.r
+│   │   ├── bcc_vc.r
+│   │   ├── bcc_vs.r
+│   │   ├── bchg_d_d.r
+│   │   ├── bclr_d_d.r
+│   │   ├── bfchg.r
+│   │   ├── bfclr.r
+│   │   ├── bfexts.r
+│   │   ├── bfextu.r
+│   │   ├── bfffo.r
+│   │   ├── bf_fullfmt.r
+│   │   ├── bfins.r
+│   │   ├── bfset.r
+│   │   ├── bftst.r
+│   │   ├── bkpt.r
+│   │   ├── bra_1.r
+│   │   ├── bra_2.r
+│   │   ├── bra_3.r
+│   │   ├── bra_l.r
+│   │   ├── bra_s.r
+│   │   ├── bset_d_d.r
+│   │   ├── bsr_l.r
+│   │   ├── bsr_s.r
+│   │   ├── btst_d_d.r
+│   │   ├── callm.r
+│   │   ├── cas2_l.r
+│   │   ├── cas_b.r
+│   │   ├── cas_l.r
+│   │   ├── cas_w.r
+│   │   ├── chk2_l.r
+│   │   ├── chk2_w.r
+│   │   ├── chk.r
+│   │   ├── cinv.r
+│   │   ├── clr_b.r
+│   │   ├── clr_l.r
+│   │   ├── clr_w.r
+│   │   ├── cmp2_l.r
+│   │   ├── cmp2_w.r
+│   │   ├── cmpa_l.r
+│   │   ├── cmpa_w.r
+│   │   ├── cmp_b.r
+│   │   ├── cmpi_b.r
+│   │   ├── cmpi_l.r
+│   │   ├── cmpi_w.r
+│   │   ├── cmp_l.r
+│   │   ├── cmpm_b.r
+│   │   ├── cmpm_l.r
+│   │   ├── cmpm_w.r
+│   │   ├── cmp_w.r
+│   │   ├── cpush.r
+│   │   ├── dbcc.r
+│   │   ├── dbra.r
+│   │   ├── divs.r
+│   │   ├── divu.r
+│   │   ├── eor_b_di.r
+│   │   ├── eor_b_d_mem.r
+│   │   ├── eori_b.r
+│   │   ├── eori_l.r
+│   │   ├── eori_to_ccr.r
+│   │   ├── eori_to_sr.r
+│   │   ├── eori_w.r
+│   │   ├── eor_l_di.r
+│   │   ├── eor_l_d_mem.r
+│   │   ├── eor_w_di.r
+│   │   ├── eor_w_d_mem.r
+│   │   ├── exg_aa.r
+│   │   ├── exg_da.r
+│   │   ├── exg_dd.r
+│   │   ├── extb.r
+│   │   ├── ext_l.r
+│   │   ├── ext_w.r
+│   │   ├── fline.r
+│   │   ├── illegal.r
+│   │   ├── jmp.r
+│   │   ├── jsr.r
+│   │   ├── lea.r
+│   │   ├── link.r
+│   │   ├── lsl_d.r
+│   │   ├── lsl_m.r
+│   │   ├── lsr_d.r
+│   │   ├── lsr_m.r
+│   │   ├── move16_mem_mem.r
+│   │   ├── move16_mem_reg.r
+│   │   ├── movea_l.r
+│   │   ├── movea_w.r
+│   │   ├── move_b_ai.r
+│   │   ├── move_b_di.r
+│   │   ├── move_b_pi.r
+│   │   ├── move_ccr_1.r
+│   │   ├── movec_c_to_r.r
+│   │   ├── movec_privtrap.r
+│   │   ├── movec_r_to_c.r
+│   │   ├── movec_super.r
+│   │   ├── move_from_sr.r
+│   │   ├── move_from_usp.r
+│   │   ├── move_index_1.r
+│   │   ├── move_l_ai.r
+│   │   ├── move_l_di.r
+│   │   ├── move_l_pi.r
+│   │   ├── move_mem_1.r
+│   │   ├── movem_fullfmt_l.r
+│   │   ├── movem_l.r
+│   │   ├── movem_w.r
+│   │   ├── movep_l_d_mem.r
+│   │   ├── movep_l_mem_d.r
+│   │   ├── movep_w_d_mem.r
+│   │   ├── movep_w_mem_d.r
+│   │   ├── moveq_1.r
+│   │   ├── moveq_2.r
+│   │   ├── moveq_3.r
+│   │   ├── moveq_4.r
+│   │   ├── moveq_neg.r
+│   │   ├── moveq_pos.r
+│   │   ├── move_reg_1.r
+│   │   ├── moves_b.r
+│   │   ├── moves_l.r
+│   │   ├── moves_privtrap.r
+│   │   ├── moves_super.r
+│   │   ├── moves_w.r
+│   │   ├── move_to_ccr.r
+│   │   ├── move_to_sr.r
+│   │   ├── move_to_usp.r
+│   │   ├── move_w_ai.r
+│   │   ├── move_w_di.r
+│   │   ├── move_w_preserve_upper.r
+│   │   ├── muls.r
+│   │   ├── mulu.r
+│   │   ├── nbcd.r
+│   │   ├── neg_b.r
+│   │   ├── neg_l.r
+│   │   ├── neg_w.r
+│   │   ├── negx_b.r
+│   │   ├── negx_l.r
+│   │   ├── negx_w.r
+│   │   ├── nop.r
+│   │   ├── not_b.r
+│   │   ├── not_l.r
+│   │   ├── not_w.r
+│   │   ├── or_abs_l_mem.r
+│   │   ├── or_b_di.r
+│   │   ├── or_b_d_mem.r
+│   │   ├── ori_b.r
+│   │   ├── ori_l.r
+│   │   ├── ori_to_ccr.r
+│   │   ├── ori_to_sr.r
+│   │   ├── ori_w.r
+│   │   ├── or_l_di.r
+│   │   ├── or_l_d_mem.r
+│   │   ├── or_w_di.r
+│   │   ├── or_w_d_mem.r
+│   │   ├── pack.r
+│   │   ├── pea.r
+│   │   ├── pflusha.r
+│   │   ├── pflush.r
+│   │   ├── pload.r
+│   │   ├── pmove_d16.r
+│   │   ├── pmove.r
+│   │   ├── ptest.r
+│   │   ├── reset.r
+│   │   ├── rol_d.r
+│   │   ├── rol_m.r
+│   │   ├── ror_d.r
+│   │   ├── ror_m.r
+│   │   ├── roxl_d.r
+│   │   ├── roxl_m.r
+│   │   ├── roxr_d.r
+│   │   ├── roxr_m.r
+│   │   ├── rtd.r
+│   │   ├── rtd_stack.r
+│   │   ├── rte_frame.r
+│   │   ├── rte_privtrap.r
+│   │   ├── rte.r
+│   │   ├── rtm.r
+│   │   ├── rtr_frame.r
+│   │   ├── rtr.r
+│   │   ├── rts.r
+│   │   ├── sbcd.r
+│   │   ├── scc.r
+│   │   ├── seq.r
+│   │   ├── sne.r
+│   │   ├── stop_privtrap.r
+│   │   ├── stop.r
+│   │   ├── stop_super.r
+│   │   ├── subal_1.r
+│   │   ├── suba_l.r
+│   │   ├── suba_w.r
+│   │   ├── sub_b_d_mem.r
+│   │   ├── sub_b.r
+│   │   ├── subi_b.r
+│   │   ├── subi_l.r
+│   │   ├── subi_w.r
+│   │   ├── sub_l_d_mem.r
+│   │   ├── sub_l.r
+│   │   ├── subq_a.r
+│   │   ├── subq_b_mem.r
+│   │   ├── subq_b.r
+│   │   ├── subq_l_mem.r
+│   │   ├── subq_l.r
+│   │   ├── subq_w_mem.r
+│   │   ├── subq_w.r
+│   │   ├── sub_w_d_mem.r
+│   │   ├── sub_w.r
+│   │   ├── subx_b.r
+│   │   ├── subx_l.r
+│   │   ├── subx_w.r
+│   │   ├── swap.r
+│   │   ├── tas.r
+│   │   ├── trap_a.r
+│   │   ├── trapcc.r
+│   │   ├── trap.r
+│   │   ├── trapv.r
+│   │   ├── tst_b.r
+│   │   ├── tst_l_nonzero.r
+│   │   ├── tst_l.r
+│   │   ├── tst_w.r
+│   │   ├── unlk.r
+│   │   └── unpk.r
+│   ├── runner.js
+│   ├── system
+│   │   ├── audio_backend.test.js
+│   │   ├── audio.test.js
+│   │   ├── audio_timing.test.js
+│   │   ├── audio_wav_backend.test.js
+│   │   ├── boot.test.js
+│   │   ├── bus_device.test.js
+│   │   ├── bus_transaction.test.js
+│   │   ├── irq.test.js
+│   │   ├── memory_map.test.js
+│   │   ├── monitor_assemble_loop.test.js
+│   │   ├── monitor_assemble_roundtrip.test.js
+│   │   ├── monitor_bench.test.js
+│   │   ├── monitor_cli.test.js
+│   │   ├── monitor_disasm.test.js
+│   │   ├── monitor_errors.test.js
+│   │   ├── monitor_exec.test.js
+│   │   ├── monitor_fx.test.js
+│   │   ├── monitor_line_editor.test.js
+│   │   ├── monitor_loadasm.test.js
+│   │   ├── monitor_patch_loadsave.test.js
+│   │   ├── monitor_program_input.test.js
+│   │   ├── monitor_program_output.test.js
+│   │   ├── monitor_reset.test.js
+│   │   ├── monitor_saveasm.test.js
+│   │   ├── monitor.test.js
+│   │   ├── monitor_timer.test.js
+│   │   ├── rtc.test.js
+│   │   ├── support
+│   │   │   ├── assemble_m68k.js
+│   │   │   └── boot_machine.js
+│   │   └── uart_boot.test.js
+│   ├── test.list
+│   ├── update_and_or.py
+│   ├── update_bcc.py
+│   ├── update_phase1.py
+│   └── update_sub.py
+├── test_code
+│   └── audio_axelf.js
+├── tmp
+│   └── 68K-Monitor.vasm.s
+├── TODO.md
+├── tools
+│   ├── monitor.js
+│   └── support
+│       ├── assemble_m68k.js
+│       └── line_editor.js
+├── tree.txt
+└── work
+    ├── 68k-monitor
+    │   ├── 68K-Monitor.bin
+    │   ├── 68K-Monitor.lst
+    │   ├── 68K-Monitor.work.s
+    │   ├── min2.bin
+    │   ├── min2.s
+    │   ├── min3.bin
+    │   ├── min3.s
+    │   ├── min.bin
+    │   ├── min.s
+    │   └── README.md
+    ├── programs
+    │   ├── audio_note.s
+    │   ├── build.sh
+    │   ├── coop_demo.s
+    │   ├── coop_regs.s
+    │   ├── echo_line.s
+    │   ├── hello_uart.s
+    │   ├── lib
+    │   │   ├── console.inc
+    │   │   ├── input.inc
+    │   │   └── task.inc
+    │   ├── pi16_nilakantha.s
+    │   ├── print_pi16.s
+    │   ├── print_status.s
+    │   ├── puthex.s
+    │   ├── ram_checksum.s
+    │   └── README.md
+    └── repros
+        └── and_w_dn_dn.s
+
+39 directories, 713 files

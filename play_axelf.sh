@@ -1,4 +1,5 @@
 #!/bin/sh
+export J68_CPU_TYPE='68040'
 export J68_MONITOR_SCRIPT='load 00090000 axelf.bin\rg 00090000\r'
 export J68_MONITOR_EXIT_ON_MONITOR=1
 export J68_AUDIO_BACKEND=${J68_AUDIO_BACKEND:-ffplay}

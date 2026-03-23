@@ -120,7 +120,7 @@ Yes we can now play Audio, its a little choppy and raw however this is a machine
 ```
 ./startmonitor.sh
 j68
-j68> loadasm 00090000 axelf_load.asm
+j68> loadasm 00090000 axelf.asm
 j68> g 00090000
 ```
 **Is that not Axel F and is that not just fitting for a 68000 CPU**

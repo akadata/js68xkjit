@@ -38,6 +38,7 @@ var bootMonitorMachine = require('./support/boot_machine').bootMonitorMachine;
     var output = state.uart.txString();
     assert.equal(output.indexOf('r [reg=value]  registers') !== -1, true, 'help command did not list register syntax');
     assert.equal(output.indexOf('a <addr>       assemble') !== -1, true, 'help command did not list assembler syntax');
+    assert.equal(output.indexOf('d <addr> [n]   disassemble/list') !== -1, true, 'help command did not list d syntax');
     assert.equal(output.indexOf('save <addr> <len> <name>') !== -1, true, 'help command did not list save syntax');
     assert.equal(output.indexOf('loadasm <addr> <name>') !== -1, true, 'help command did not list loadasm syntax');
     assert.equal(output.indexOf('source          list source/ files') !== -1, true, 'help command did not list source syntax');
