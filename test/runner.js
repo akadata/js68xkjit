@@ -253,6 +253,12 @@ var harness = {
 			cpu.context.pc = 0x100;
 		}
 	},
+	'r/bf_fullfmt.r': {
+		setup: function (cpu) {
+			cpu.type = j68.j68.TYPE_MC68020;
+			cpu.context.pc = 0x100;
+		}
+	},
 	'r/bfffo.r': {
 		setup: function (cpu) {
 			cpu.type = j68.j68.TYPE_MC68020;
@@ -339,6 +345,16 @@ var harness = {
 		}
 	},
 	'r/pmove.r': {
+		setup: function (cpu) {
+			cpu.type = j68.j68.TYPE_MC68030;
+			cpu.context.setSr(0x2015);
+			cpu.context.ssp = 0x2000;
+			cpu.context.a[7] = 0x2000;
+			cpu.context.tc = 5;
+			cpu.context.pc = 0x100;
+		}
+	},
+	'r/pmove_d16.r': {
 		setup: function (cpu) {
 			cpu.type = j68.j68.TYPE_MC68030;
 			cpu.context.setSr(0x2015);

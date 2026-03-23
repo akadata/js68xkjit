@@ -6,6 +6,35 @@
 - `cd test && node runner.js` must stay `231/233`.
 - `CALLM` and `RTM` remain explicitly deferred and untouched.
 
+## Current CPU Completion Block
+
+The next CPU-facing block is now explicit.
+
+Immediate next CPU blockers:
+
+1. `MOVEM`
+   - replace the current stub with real register-mask semantics
+   - cover register-to-memory and memory-to-register paths properly
+2. `NBCD`
+   - replace the current stub with real decimal negate semantics
+   - verify `X`, `C`, `Z`, and result behavior
+3. `ABCD`
+   - replace the current stub with real decimal add semantics
+   - cover register and predecrement-memory forms
+4. memory rotates
+   - `ROL` memory
+   - `ROR` memory
+   - `ROXL` memory
+   - `ROXR` memory
+
+Acceptance for this CPU block:
+
+- no semantic stubs remain for the above instructions
+- targeted CPU tests are added or strengthened for each one
+- `./runtests.sh` stays green
+- `cd test && node runner.js` stays `231/233`
+- `CALLM` / `RTM` remain deferred
+
 ## Current Machine / Monitor Checkpoint
 
 The small j68 software environment has reached a clean checkpoint:

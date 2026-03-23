@@ -74,12 +74,14 @@ function main() {
     var exitOnMonitor = process.env.J68_MONITOR_EXIT_ON_MONITOR === '1';
     var settledMonitorTicks = 0;
     var lineEditor = null;
+    var lastMonitorActive = false;
 
     if (options.cleanGenerated)
         assemble.cleanGenerated();
     state = buildMachine(cpuType, options);
     machine = state.machine;
     uart = state.uart;
+    lastMonitorActive = !!(machine.monitor && machine.monitor.active);
 
     function flushOutput() {
         var text = uart.consumeTxString();
@@ -156,7 +158,14 @@ function main() {
             machine.clearFault();
         }
 
+        if (lineEditor && machine.monitor && machine.monitor.active && !lastMonitorActive)
+            lineEditor.resetTransientInput();
+
         flushOutput();
+        lastMonitorActive = !!(machine.monitor && machine.monitor.active);
+
+        if (machine.requestExit)
+            shutdown(0);
 
         if (exitOnMonitor && machine.monitor && machine.monitor.active && uart.rx.length === 0) {
             settledMonitorTicks += 1;

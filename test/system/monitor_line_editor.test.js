@@ -40,4 +40,26 @@ var createLineEditor = require('../../tools/support/line_editor').createLineEdit
     assert.deepEqual(lines, [ 'first\r', 'first\r' ], 'line editor did not recall the previous line from history');
 })();
 
+(function testLineEditorClearsGuestSidePartialInputWhenMonitorReturns() {
+    var writes = [];
+    var lines = [];
+    var editor = createLineEditor({
+        write: function (text) { writes.push(text); },
+        onLine: function (line) { lines.push(line); }
+    });
+
+    editor.handleOutput('j68> ');
+    editor.handleChunk('g 00180000\r');
+    editor.handleOutput('ABCDEF');
+    editor.handleChunk('A');
+    editor.resetTransientInput();
+    editor.handleOutput('\r\nj68> ');
+
+    var rendered = writes.join('').replace(/\x1b\[[0-9;]*[A-Za-z]/g, '');
+    assert.deepEqual(lines, [ 'g 00180000\r' ], 'line editor emitted unexpected guest input while returning to the monitor');
+    assert.equal(rendered.indexOf('ABCDEF\r\nj68> A') === -1, true, 'line editor redrew stale guest input onto the monitor prompt');
+    assert.equal(rendered.indexOf('Aj68>') === -1, true, 'line editor prefixed the prompt with stale guest input');
+    assert.equal(editor._state.line, '', 'line editor did not clear the stale guest input buffer');
+})();
+
 console.log('monitor_line_editor.test.js: ok');

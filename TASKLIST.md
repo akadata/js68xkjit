@@ -8,6 +8,17 @@ Immediate next block:
 2. interrupt-driven input after cleaner IPL exposure
 3. richer cooperative guest demos, still without preemption
 
+Immediate next CPU block:
+
+1. real `MOVEM`
+2. real `NBCD`
+3. real `ABCD`
+4. memory rotates:
+   - `ROL` memory
+   - `ROR` memory
+   - `ROXL` memory
+   - `ROXR` memory
+
 Constraints:
 
 - `./runtests.sh` stays green
