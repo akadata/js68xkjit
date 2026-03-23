@@ -97,3 +97,11 @@ Current stable baseline:
 - `cd test && node runner.js` stays `231/233`
 - `CALLM` and `RTM` remain explicitly deferred
 
+- Passed: 231/233
+- Failed: 0/231
+- Deferred: 2/233
+
+deferred invalid smoke test: 2
+
+r/callm.r [deferred invalid smoke test]: CALLM requires a valid module descriptor and transfer target; this local smoke test points A0 at the program image
+r/rtm.r [deferred invalid smoke test]: RTM requires a saved module state on the stack from a prior CALLM
