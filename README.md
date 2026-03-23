@@ -2,11 +2,10 @@
 
 **js68xkjit** — a 68k CPU and test computer platform in Node.js.
 
-Originally built around the `j68` CPU core created by Takashi Toyoshima:
-https://github.com/toyoshim/j68
+Originally built around the `j68` CPU core created by `Takashi Toyoshima` [https://github.com/toyoshim/j68k](https://github.com/toyoshim/j68k)
 
 This project has since grown into a broader bring-up, monitor, test, and CPU validation platform around that base.
-A small virtual Motorola 68k test computer built around the `j68k` CPU core created by `Takashi Toyoshima` [https://github.com/toyoshim/j68k](https://github.com/toyoshim/j68k)
+A small virtual Motorola 68k test computer built around the `j68k` CPU core and now includes Audio playback, video is next on the menu
 
 This project is a bring-up machine, not a full Amiga implementation. The focus is:
 
