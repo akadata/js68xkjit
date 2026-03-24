@@ -13,8 +13,9 @@ Uart.STATUS_RX_READY = 0x02;
 
 Uart.prototype.status = function () {
     var status = Uart.STATUS_TX_READY;
-    if (this.rx.length !== 0)
+    if (this.rx.length !== 0) {
         status |= Uart.STATUS_RX_READY;
+    }
     return status;
 };
 
@@ -30,21 +31,24 @@ Uart.prototype.region = function () {
             if (offset <= 3) {
                 return self.readData();
             }
-            if (offset >= 4 && offset <= 7)
+            if (offset >= 4 && offset <= 7) {
                 return self.status();
+            }
             return 0;
         },
         write8: function (address, value) {
             var offset = (address - self.start) >>> 0;
-            if (offset <= 3)
+            if (offset <= 3) {
                 self.writeData(value);
+            }
         }
     };
 };
 
 Uart.prototype.readData = function () {
-    if (this.rx.length === 0)
+    if (this.rx.length === 0) {
         return 0;
+    }
     return this.rx.shift() & 0xff;
 };
 
@@ -58,8 +62,9 @@ Uart.prototype.enqueueRxString = function (text) {
 };
 
 Uart.prototype.writeString = function (text) {
-    for (var i = 0; i < text.length; ++i)
+    for (var i = 0; i < text.length; ++i) {
         this.writeData(text.charCodeAt(i));
+    }
 };
 
 Uart.prototype.reset = function () {

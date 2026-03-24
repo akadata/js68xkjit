@@ -26,8 +26,9 @@ function createLineEditor(options) {
                 continue;
             }
             state.displayTail += ch;
-            if (state.displayTail.length > 256)
+            if (state.displayTail.length > 256) {
                 state.displayTail = state.displayTail.slice(-256);
+            }
         }
     }
 
@@ -48,8 +49,9 @@ function createLineEditor(options) {
         var line = state.line;
         write('\r\n');
         if (line !== '') {
-            if (state.history.length === 0 || state.history[state.history.length - 1] !== line)
+            if (state.history.length === 0 || state.history[state.history.length - 1] !== line) {
                 state.history.push(line);
+            }
         }
         state.historyIndex = null;
         state.historyDraft = '';
@@ -71,8 +73,9 @@ function createLineEditor(options) {
     }
 
     function handleHistoryUp() {
-        if (state.history.length === 0)
+        if (state.history.length === 0) {
             return;
+        }
         if (state.historyIndex === null) {
             state.historyDraft = state.line;
             state.historyIndex = state.history.length - 1;
@@ -83,8 +86,9 @@ function createLineEditor(options) {
     }
 
     function handleHistoryDown() {
-        if (state.historyIndex === null)
+        if (state.historyIndex === null) {
             return;
+        }
         if (state.historyIndex < state.history.length - 1) {
             state.historyIndex += 1;
             setLine(state.history[state.historyIndex]);
@@ -144,18 +148,21 @@ function createLineEditor(options) {
         }
 
         if (state.suppressPos !== 0 && state.suppressPos < state.suppressLine.length) {
-            if (i === text.length)
+            if (i === text.length) {
                 return '';
+            }
             state.suppressLine = null;
             state.suppressPos = 0;
             return text;
         }
 
         if (state.suppressPos === state.suppressLine.length) {
-            if (text.charAt(i) === '\r')
+            if (text.charAt(i) === '\r') {
                 i += 1;
-            if (text.charAt(i) === '\n')
+            }
+            if (text.charAt(i) === '\n') {
                 i += 1;
+            }
             state.suppressLine = null;
             state.suppressPos = 0;
             return text.slice(i);
@@ -169,18 +176,21 @@ function createLineEditor(options) {
     }
 
     function handleOutput(text) {
-        if (!text)
+        if (!text) {
             return;
+        }
         var hadLine = hasActiveLine();
-        if (hadLine)
+        if (hadLine) {
             write('\r\x1b[2K');
+        }
         text = consumeSuppressedEcho(text);
         if (text !== '') {
             write(text);
             updateDisplayTail(text);
         }
-        if (hadLine)
+        if (hadLine) {
             redrawLine();
+        }
     }
 
     function handleChunk(chunk) {

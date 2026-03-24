@@ -22,37 +22,46 @@ function uniqueDevices(regions) {
 
 function requireWidth(region, size, write) {
     var op = write ? 'write' : 'read';
-    if (size === 1 && typeof region[op + '8'] === 'function')
+    if (size === 1 && typeof region[op + '8'] === 'function') {
         return;
-    if (size === 2 && typeof region[op + '16'] === 'function')
+    }
+    if (size === 2 && typeof region[op + '16'] === 'function') {
         return;
-    if (size === 4 && typeof region[op + '32'] === 'function')
+    }
+    if (size === 4 && typeof region[op + '32'] === 'function') {
         return;
+    }
     throw new RangeError(region.name + ' rejects ' + (size * 8) + '-bit ' + op);
 }
 
 function readRegion(region, address, size) {
-    if (region.strictSizes)
+    if (region.strictSizes) {
         requireWidth(region, size, false);
+    }
     if (size === 1) {
         if (typeof region.read8 !== 'function')
             throw new RangeError(region.name + ' does not support byte reads');
         return region.read8(address) & 0xff;
     }
     if (size === 2) {
-        if (typeof region.read16 === 'function')
+        if (typeof region.read16 === 'function') {
             return region.read16(address) & 0xffff;
-        if (typeof region.read8 !== 'function')
+        }
+        if (typeof region.read8 !== 'function') {
             throw new RangeError(region.name + ' does not support word reads');
+        }
         return ((region.read8(address) << 8) | region.read8(address + 1)) & 0xffff;
     }
     if (size === 4) {
-        if (typeof region.read32 === 'function')
+        if (typeof region.read32 === 'function') {
             return region.read32(address) >>> 0;
-        if (typeof region.read16 === 'function')
+        }
+        if (typeof region.read16 === 'function') {
             return (((region.read16(address) << 16) >>> 0) | region.read16(address + 2)) >>> 0;
-        if (typeof region.read8 !== 'function')
+        }
+        if (typeof region.read8 !== 'function') {
             throw new RangeError(region.name + ' does not support long reads');
+        }
         return ((((region.read8(address) << 24) >>> 0) |
             (region.read8(address + 1) << 16) |
             (region.read8(address + 2) << 8) |
@@ -62,11 +71,13 @@ function readRegion(region, address, size) {
 }
 
 function writeRegion(region, address, size, value) {
-    if (region.strictSizes)
+    if (region.strictSizes) {
         requireWidth(region, size, true);
+    }
     if (size === 1) {
-        if (typeof region.write8 !== 'function')
+        if (typeof region.write8 !== 'function') {
             throw new RangeError(region.name + ' does not support byte writes');
+        }
         region.write8(address, value & 0xff);
         return;
     }
@@ -75,8 +86,9 @@ function writeRegion(region, address, size, value) {
             region.write16(address, value & 0xffff);
             return;
         }
-        if (typeof region.write8 !== 'function')
+        if (typeof region.write8 !== 'function') {
             throw new RangeError(region.name + ' does not support word writes');
+        }
         region.write8(address, (value >>> 8) & 0xff);
         region.write8(address + 1, value & 0xff);
         return;
@@ -91,8 +103,9 @@ function writeRegion(region, address, size, value) {
             region.write16(address + 2, value & 0xffff);
             return;
         }
-        if (typeof region.write8 !== 'function')
+        if (typeof region.write8 !== 'function') {
             throw new RangeError(region.name + ' does not support long writes');
+        }
         region.write8(address, (value >>> 24) & 0xff);
         region.write8(address + 1, (value >>> 16) & 0xff);
         region.write8(address + 2, (value >>> 8) & 0xff);
@@ -127,20 +140,23 @@ Bus.prototype.assertAligned = function (address, size) {
 };
 
 Bus.prototype.attach = function (device) {
-    if (!device || typeof device.region !== 'function')
+    if (!device || typeof device.region !== 'function') {
         throw new TypeError('device does not expose region()');
+    }
     return this.map(device.region());
 };
 
 Bus.prototype.map = function (region) {
-    if (!region || typeof region.start !== 'number' || typeof region.end !== 'number')
+    if (!region || typeof region.start !== 'number' || typeof region.end !== 'number') {
         throw new TypeError('invalid region');
+    }
     region.start = this.normalizeAddress(region.start);
     region.end = this.normalizeAddress(region.end);
     for (var i = 0; i < this.regions.length; ++i) {
         var existing = this.regions[i];
-        if (!(region.end < existing.start || region.start > existing.end))
+        if (!(region.end < existing.start || region.start > existing.end)) {
             throw new RangeError('overlapping region: ' + region.name + ' with ' + existing.name);
+        }
     }
     this.regions.push(region);
     this.regions.sort(function (a, b) {
@@ -164,15 +180,17 @@ Bus.prototype.regionFor = function (address, size) {
     var normalized = this.normalizeAddress(address);
     for (var i = 0; i < this.regions.length; ++i) {
         var region = this.regions[i];
-        if (rangeContains(region.start, region.end, normalized, size))
+        if (rangeContains(region.start, region.end, normalized, size)) {
             return region;
+        }
     }
     throw new errors.UnmappedAccessError(normalized, size);
 };
 
 Bus.prototype.trace = function (kind, size, address, value, region) {
-    if (!this.traceHook)
+    if (!this.traceHook) {
         return;
+    }
     this.traceHook({
         kind: kind,
         size: size | 0,
@@ -203,10 +221,11 @@ Bus.prototype.transact = function (transaction) {
     try {
         this.assertAligned(tx.addr, tx.size);
         tx.region = this.regionFor(tx.addr, tx.size);
-        if (tx.write)
+        if (tx.write) {
             writeRegion(tx.region, tx.addr, tx.size, tx.value);
-        else
+        } else {
             tx.value = readRegion(tx.region, tx.addr, tx.size) >>> 0;
+        }
         tx.berr = false;
         this.trace(tx.write ? 'write' : 'read', tx.size, tx.addr, tx.value, tx.region);
     } catch (error) {
@@ -223,8 +242,9 @@ Bus.prototype.resolveIpl = function () {
     for (var i = 0; i < devices.length; ++i) {
         if (typeof devices[i].getInterruptLevel === 'function') {
             var level = devices[i].getInterruptLevel() | 0;
-            if (level > highest)
+            if (level > highest) {
                 highest = level;
+            }
         }
     }
     return highest;
@@ -232,22 +252,25 @@ Bus.prototype.resolveIpl = function () {
 
 Bus.prototype.read8 = function (address, meta) {
     var tx = this.transact(this.createTransaction(address, 1, false, meta));
-    if (tx.berr)
+    if (tx.berr) {
         throw tx.error;
+    }
     return tx.value & 0xff;
 };
 
 Bus.prototype.read16 = function (address, meta) {
     var tx = this.transact(this.createTransaction(address, 2, false, meta));
-    if (tx.berr)
+    if (tx.berr) {
         throw tx.error;
+    }
     return tx.value & 0xffff;
 };
 
 Bus.prototype.read32 = function (address, meta) {
     var tx = this.transact(this.createTransaction(address, 4, false, meta));
-    if (tx.berr)
+    if (tx.berr) {
         throw tx.error;
+    }
     return tx.value >>> 0;
 };
 
@@ -255,24 +278,27 @@ Bus.prototype.write8 = function (address, value, meta) {
     var txMeta = meta || {};
     txMeta.value = value & 0xff;
     var tx = this.transact(this.createTransaction(address, 1, true, txMeta));
-    if (tx.berr)
+    if (tx.berr) {
         throw tx.error;
+    }
 };
 
 Bus.prototype.write16 = function (address, value, meta) {
     var txMeta = meta || {};
     txMeta.value = value & 0xffff;
     var tx = this.transact(this.createTransaction(address, 2, true, txMeta));
-    if (tx.berr)
+    if (tx.berr) {
         throw tx.error;
+    }
 };
 
 Bus.prototype.write32 = function (address, value, meta) {
     var txMeta = meta || {};
     txMeta.value = value >>> 0;
     var tx = this.transact(this.createTransaction(address, 4, true, txMeta));
-    if (tx.berr)
+    if (tx.berr) {
         throw tx.error;
+    }
 };
 
 Bus.prototype.fetch = function (address) {
@@ -282,26 +308,30 @@ Bus.prototype.fetch = function (address) {
 Bus.prototype.reset = function () {
     var devices = uniqueDevices(this.regions);
     for (var i = 0; i < devices.length; ++i) {
-        if (typeof devices[i].reset === 'function')
+        if (typeof devices[i].reset === 'function') {
             devices[i].reset();
+        }
     }
 };
 
 Bus.prototype.advance = function (cycles) {
     var devices = uniqueDevices(this.regions);
     for (var i = 0; i < devices.length; ++i) {
-        if (typeof devices[i].advance === 'function')
+        if (typeof devices[i].advance === 'function') {
             devices[i].advance(cycles >>> 0);
-        else if (typeof devices[i].tick === 'function')
+        }
+        else if (typeof devices[i].tick === 'function') {
             devices[i].tick(cycles >>> 0);
+        }
     }
 };
 
 Bus.prototype.advanceTime = function (seconds) {
     var devices = uniqueDevices(this.regions);
     for (var i = 0; i < devices.length; ++i) {
-        if (typeof devices[i].advanceTime === 'function')
+        if (typeof devices[i].advanceTime === 'function') {
             devices[i].advanceTime(seconds);
+        }
     }
 };
 

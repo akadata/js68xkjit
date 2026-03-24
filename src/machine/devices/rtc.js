@@ -5,8 +5,9 @@ function defaultTimingMode() {
 }
 
 function resolveFrameHz(mode) {
-    if (mode === 'NTSC')
+    if (mode === 'NTSC') {
         return 60;
+    }
     return 50;
 }
 
@@ -77,18 +78,30 @@ Rtc.prototype.parts = function () {
 Rtc.prototype.readWord = function (offset) {
     var parts = this.parts();
     switch (offset & 0xfffe) {
-        case 0x00: return 0x5243;
-        case 0x02: return parts.ctrl;
-        case 0x04: return parts.status;
-        case 0x06: return parts.frameHz;
-        case 0x08: return parts.crystalHz;
-        case 0x0a: return parts.year;
-        case 0x0c: return parts.monthDay;
-        case 0x0e: return parts.hourMinute;
-        case 0x10: return parts.secondWeekday;
-        case 0x12: return parts.subseconds;
-        case 0x14: return parts.unixHi;
-        case 0x16: return parts.unixLo;
+        case 0x00: 
+            return 0x5243;
+        case 0x02: 
+            return parts.ctrl;
+        case 0x04: 
+            return parts.status;
+        case 0x06: 
+            return parts.frameHz;
+        case 0x08: 
+            return parts.crystalHz;
+        case 0x0a: 
+            return parts.year;
+        case 0x0c: 
+            return parts.monthDay;
+        case 0x0e: 
+            return parts.hourMinute;
+        case 0x10: 
+            return parts.secondWeekday;
+        case 0x12: 
+            return parts.subseconds;
+        case 0x14: 
+            return parts.unixHi;
+        case 0x16: 
+            return parts.unixLo;
     }
     return 0;
 };
@@ -102,8 +115,9 @@ Rtc.prototype.read8 = function (address) {
 Rtc.prototype.write8 = function (address, value) {
     var offset = (address - this.start) >>> 0;
     value &= 0xff;
-    if ((offset & 0xfffe) === 0x02 && (offset & 1) === 1)
+    if ((offset & 0xfffe) === 0x02 && (offset & 1) === 1) {
         this.utc = (value & Rtc.CTRL_UTC) !== 0;
+    }
 };
 
 module.exports = Rtc;

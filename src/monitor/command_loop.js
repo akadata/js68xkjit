@@ -45,19 +45,24 @@ CommandLoop.prototype.poll = function () {
             if (response && typeof response === 'object') {
                 output = response.output || '';
                 suppressPrompt = !!response.suppressPrompt;
-                if (response.exitMode)
+                if (response.exitMode) {
                     this.mode = null;
-                if (response.mode)
+                }
+                if (response.mode) {
                     this.mode = response.mode;
+                }
             }
-            if (output !== '')
+            if (output !== '') {
                 this.write(output + '\r\n');
-            if (!this.active)
+            }
+            if (!this.active) {
                 return;
-            if (this.mode && typeof this.mode.prompt === 'function')
+            }
+            if (this.mode && typeof this.mode.prompt === 'function') {
                 this.write(this.mode.prompt());
-            else if (!suppressPrompt)
+            } else if (!suppressPrompt) {
                 this.write(this.prompt);
+            }
             continue;
         }
         if (ch === 0x08 || ch === 0x7f) {

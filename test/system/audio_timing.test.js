@@ -51,8 +51,9 @@ var bootMachine = require('./support/boot_machine').bootMachine;
 
     timer.control = 0;
     timer.pending = false;
-    for (i = 0; i < 1000; ++i)
+    for (i = 0; i < 1000; ++i) {
         machine.stepInstruction();
+    }
 
     assert.equal(cpu.a[2] >>> 0, firstPointer, 'sequencer advanced while timer was disabled');
     assert.equal(timer.ticks >>> 0, firstTicks, 'timer ticked while disabled');

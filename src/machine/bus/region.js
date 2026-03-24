@@ -4,10 +4,12 @@ function createMemoryRegion(name, start, size, bytes, writable, options) {
     var base = start >>> 0;
     var opts = options || {};
 
-    if (!(bytes instanceof Uint8Array))
+    if (!(bytes instanceof Uint8Array)) {
         throw new TypeError(name + ' bytes must be a Uint8Array');
-    if (bytes.length !== size)
+    }
+    if (bytes.length !== size) {
         throw new RangeError(name + ' size mismatch');
+    }
 
     function offset(address) {
         return ((address >>> 0) - base) >>> 0;
@@ -35,20 +37,23 @@ function createMemoryRegion(name, start, size, bytes, writable, options) {
                 bytes[index + 3]) >>> 0);
         },
         write8: function (address, value) {
-            if (!writable)
+            if (!writable) {
                 throw new errors.ReadOnlyError(name, address);
+            }
             bytes[offset(address)] = value & 0xff;
         },
         write16: function (address, value) {
-            if (!writable)
+            if (!writable) {
                 throw new errors.ReadOnlyError(name, address);
+            }
             var index = offset(address);
             bytes[index] = (value >>> 8) & 0xff;
             bytes[index + 1] = value & 0xff;
         },
         write32: function (address, value) {
-            if (!writable)
+            if (!writable) {
                 throw new errors.ReadOnlyError(name, address);
+            }
             var index = offset(address);
             bytes[index] = (value >>> 24) & 0xff;
             bytes[index + 1] = (value >>> 16) & 0xff;

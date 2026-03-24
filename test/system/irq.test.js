@@ -33,7 +33,9 @@ function bareInterruptMachine(typeName) {
     var intc = new Intc();
     machine.attachIntc(intc);
     machine.reset();
-    return { machine: machine, intc: intc };
+    return { 
+        machine: machine, intc: intc 
+    };
 }
 
 (function testTimerRaisesIrq2AndRteReturnsCleanly() {

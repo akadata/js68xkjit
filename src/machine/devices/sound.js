@@ -11,10 +11,12 @@ var CHSTATE = registerMap.CH_STATE_BITS;
 var WAVE = registerMap.CH_WAVE_TYPES;
 
 function clampSample(value) {
-    if (value > 1)
+    if (value > 1) {
         return 1;
-    if (value < -1)
+    }
+    if (value < -1) {
         return -1;
+    }
     return value;
 }
 
@@ -63,15 +65,17 @@ function wavBackend(sampleRate, wavPath) {
         type: 'wav',
         path: outPath,
         writeSamples: function (buffer) {
-            if (closed || !buffer || buffer.length === 0)
+            if (closed || !buffer || buffer.length === 0) {
                 return;
+            }
             fs.writeSync(fd, buffer, 0, buffer.length, writeOffset);
             writeOffset = (writeOffset + buffer.length) >>> 0;
             dataBytes = (dataBytes + buffer.length) >>> 0;
         },
         close: function () {
-            if (closed)
+            if (closed) {
                 return;
+            }
             closed = true;
             writeWavHeader(fd, sampleRate, dataBytes);
             fs.closeSync(fd);
@@ -121,8 +125,9 @@ function ffplayBackend(sampleRate) {
     return {
         type: 'ffplay',
         writeSamples: function (buffer) {
-            if (!alive || !child.stdin || child.stdin.destroyed || !buffer || buffer.length === 0)
+            if (!alive || !child.stdin || child.stdin.destroyed || !buffer || buffer.length === 0) {
                 return;
+            }
             try {
                 child.stdin.write(buffer);
             } catch (error) {
@@ -130,11 +135,13 @@ function ffplayBackend(sampleRate) {
             }
         },
         close: function () {
-            if (!alive)
+            if (!alive) {
                 return;
+            }
             alive = false;
-            if (child.stdin && !child.stdin.destroyed)
+            if (child.stdin && !child.stdin.destroyed) {
                 child.stdin.end();
+            }
             child.kill('SIGTERM');
         }
     };
@@ -161,8 +168,9 @@ function createChannel() {
 
 function createChannels(count) {
     var channels = [];
-    for (var i = 0; i < count; ++i)
+    for (var i = 0; i < count; ++i) {
         channels.push(createChannel());
+    }
     return channels;
 }
 
@@ -191,14 +199,16 @@ function Sound(options) {
 
     var self = this;
     process.once('exit', function () {
-        if (self.backend)
+        if (self.backend) {
             self.backend.close();
+        }
     });
 }
 
 Sound.prototype.ensureBackend = function () {
-    if (this.backend)
+    if (this.backend) {
         return this.backend;
+    }
     if (this.backendName === 'null' || this.backendName === 'none') {
         this.backend = nullBackend();
         return this.backend;
@@ -248,27 +258,35 @@ Sound.prototype.globalStatus = function () {
         }
     }
     var status = 0;
-    if ((this.globalCtrl & GLOBAL.ENABLE) !== 0)
+    if ((this.globalCtrl & GLOBAL.ENABLE) !== 0) {
         status |= STATUS.ENABLED;
-    if (busy)
+    }
+    if (busy) {
         status |= STATUS.BUSY;
-    if (this.clip)
+    }
+    if (this.clip) {
         status |= STATUS.CLIPPING;
+    }
     return status;
 };
 
 Sound.prototype.updateStateBits = function (channel) {
     var bits = 0;
-    if ((channel.ctrl & CHCTRL.ENABLE) !== 0 && channel.env > 0.0001)
+    if ((channel.ctrl & CHCTRL.ENABLE) !== 0 && channel.env > 0.0001) {
         bits |= CHSTATE.ACTIVE;
-    if (channel.envState === 'attack')
+    }
+    if (channel.envState === 'attack') {
         bits |= CHSTATE.ATTACK;
-    else if (channel.envState === 'decay')
+    }
+    else if (channel.envState === 'decay') {
         bits |= CHSTATE.DECAY;
-    else if (channel.envState === 'sustain')
+    }
+    else if (channel.envState === 'sustain') {
         bits |= CHSTATE.SUSTAIN;
-    else if (channel.envState === 'release')
+    }
+    else if (channel.envState === 'release') {
         bits |= CHSTATE.RELEASE;
+    }
     channel.stateBits = bits;
 };
 
@@ -279,8 +297,9 @@ Sound.prototype.sustainLevel = function (channel) {
 Sound.prototype.handleGateWrite = function (channel, oldCtrl, newCtrl) {
     var oldGate = (oldCtrl & CHCTRL.GATE) !== 0;
     var newGate = (newCtrl & CHCTRL.GATE) !== 0;
-    if (oldGate === newGate)
+    if (oldGate === newGate) {
         return;
+    }
     if (newGate) {
         channel.envState = 'attack';
         if (channel.env < 0)
@@ -300,16 +319,18 @@ Sound.prototype.writeRegister16 = function (offset, value) {
     value &= 0xffff;
     switch (offset) {
         case registerMap.GLOBAL_CTRL:
-            if (value & GLOBAL.RESET)
+            if (value & GLOBAL.RESET) {
                 this.reset();
+            }
             this.globalCtrl = value & ~GLOBAL.RESET;
             break;
         case registerMap.MASTER_VOL:
             this.masterVol = value & 0x00ff;
             break;
         case registerMap.SAMPLE_RATE:
-            if (value !== 0)
+            if (value !== 0) {
                 this.sampleRateHint = value >>> 0;
+            }
             break;
         case registerMap.CH_INDEX:
             this.channelIndex = value % this.channels.length;
@@ -396,8 +417,9 @@ Sound.prototype.readRegister16 = function (offset) {
 Sound.prototype.read8 = function (address) {
     var offset = (address - this.start) >>> 0;
     var value = this.readRegister16(offset & ~1);
-    if ((offset & 1) === 0)
+    if ((offset & 1) === 0) {
         return (value >>> 8) & 0xff;
+    }
     return value & 0xff;
 };
 
@@ -405,10 +427,11 @@ Sound.prototype.write8 = function (address, value) {
     var offset = (address - this.start) >>> 0;
     var reg = offset & ~1;
     var current = this.readRegister16(reg);
-    if ((offset & 1) === 0)
+    if ((offset & 1) === 0) {
         current = ((value & 0xff) << 8) | (current & 0x00ff);
-    else
+    } else {
         current = (current & 0xff00) | (value & 0xff);
+    }
     this.writeRegister16(reg, current);
 };
 
@@ -424,10 +447,12 @@ Sound.prototype.waveSample = function (channel) {
     var wave = (channel.ctrl & registerMap.CH_WAVE_MASK) >> registerMap.CH_WAVE_SHIFT;
     var phase = channel.phase >>> 0;
     var msb = (phase >>> 31) & 1;
-    if (wave === WAVE.SAW)
+    if (wave === WAVE.SAW) {
         return ((phase / 0x80000000) - 1);
-    if (wave === WAVE.SINE)
+    }
+    if (wave === WAVE.SINE) {
         return Math.sin((phase / 0xffffffff) * Math.PI * 2);
+    }
     if (wave === WAVE.NOISE) {
         if (msb !== channel.phaseMsb) {
             var feedback = ((channel.noiseLfsr ^ (channel.noiseLfsr >>> 2) ^ (channel.noiseLfsr >>> 3) ^ (channel.noiseLfsr >>> 5)) & 1);
@@ -438,8 +463,9 @@ Sound.prototype.waveSample = function (channel) {
     }
     channel.phaseMsb = msb;
     var threshold = ((channel.pulseWidth & 0xffff) << 16) >>> 0;
-    if (threshold === 0)
+    if (threshold === 0) {
         threshold = 0x80000000;
+    }
     return phase < threshold ? 1 : -1;
 };
 
@@ -486,36 +512,41 @@ Sound.prototype.generateSample = function () {
         var channel = this.channels[i];
         var env = this.stepEnvelope(channel);
         channel.phase = (channel.phase + channel.freq) >>> 0;
-        if (env <= 0.0001)
+        if (env <= 0.0001) {
             continue;
+        }
         var gain = env * ((channel.vol & 0xff) / 255) * masterGain;
         mixed += this.waveSample(channel) * gain;
         active += 1;
     }
-    if (active === 0)
+    if (active === 0) {
         return 0;
+    }
     return mixed;
 };
 
 Sound.prototype.advance = function (cycles) {
     cycles >>>= 0;
-    if (cycles === 0)
+    if (cycles === 0) {
         return;
+    }
     this.sampleAccumulator += cycles * this.sampleRate;
     if (this.sampleAccumulator < this.baseHz)
         return;
 
     var count = Math.floor(this.sampleAccumulator / this.baseHz);
     this.sampleAccumulator -= count * this.baseHz;
-    if (count <= 0)
+    if (count <= 0) {
         return;
+    }
 
     var buffer = Buffer.alloc(count * 2);
     this.clip = false;
     for (var i = 0; i < count; ++i) {
         var mixed = this.generateSample();
-        if (mixed > 1 || mixed < -1)
+        if (mixed > 1 || mixed < -1) {
             this.clip = true;
+        }
         var sample = Math.round(clampSample(mixed) * 32767);
         buffer.writeInt16LE(sample, i * 2);
     }
@@ -524,23 +555,27 @@ Sound.prototype.advance = function (cycles) {
 };
 
 Sound.prototype.advanceTime = function (seconds) {
-    if (!(seconds > 0))
+    if (!(seconds > 0)) {
         return;
+    }
     this.fractionalSamples += seconds * this.sampleRate;
-    if (this.fractionalSamples < 1)
+    if (this.fractionalSamples < 1) {
         return;
+    }
 
     var count = Math.floor(this.fractionalSamples);
     this.fractionalSamples -= count;
-    if (count <= 0)
+    if (count <= 0) {
         return;
+    }
 
     var buffer = Buffer.alloc(count * 2);
     this.clip = false;
     for (var i = 0; i < count; ++i) {
         var mixed = this.generateSample();
-        if (mixed > 1 || mixed < -1)
+        if (mixed > 1 || mixed < -1) {
             this.clip = true;
+        }
         var sample = Math.round(clampSample(mixed) * 32767);
         buffer.writeInt16LE(sample, i * 2);
     }

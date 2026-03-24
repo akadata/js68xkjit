@@ -15,17 +15,20 @@ var createLineEditor = require('./support/line_editor').createLineEditor;
 var cpuType = process.env.J68_CPU_TYPE || '68000';
 
 function parseUintEnv(name, fallback) {
-    if (!process.env[name])
+    if (!process.env[name]) {
         return fallback >>> 0;
+    }
     return parseInt(process.env[name], 0) >>> 0;
 }
 
 function resolveTimerMode() {
     var mode = String(process.env.J68_TIMER_MODE || 'PAL').toUpperCase();
-    if (mode === 'PAL')
+    if (mode === 'PAL') {
         return { mode: 'PAL', crystalHz: 32768, frameHz: 50 };
-    if (mode === 'NTSC')
+    }
+    if (mode === 'NTSC') {
         return { mode: 'NTSC', crystalHz: 32768, frameHz: 60 };
+    }
     return {
         mode: mode,
         crystalHz: parseUintEnv('J68_RTC_HZ', parseUintEnv('J68_TIMER_HZ', 32768)),
@@ -114,8 +117,9 @@ function main() {
     var lastMonitorActive = false;
     var lastTick = process.hrtime.bigint();
 
-    if (options.cleanGenerated)
+    if (options.cleanGenerated) {
         assemble.cleanGenerated();
+    }
     state = buildMachine(cpuType, options);
     machine = state.machine;
     uart = state.uart;
@@ -123,29 +127,34 @@ function main() {
 
     function flushOutput() {
         var text = uart.consumeTxString();
-        if (text === '')
+        if (text === '') {
             return;
-        if (lineEditor)
+        }
+        if (lineEditor) {
             lineEditor.handleOutput(text);
-        else
+        } else {
             process.stdout.write(text);
+        }
     }
 
     function shutdown(code) {
         clearInterval(loop);
         flushOutput();
-        if (process.stdin.isTTY)
+        if (process.stdin.isTTY) {
             process.stdin.setRawMode(false);
+        }
         process.stdin.pause();
         process.exit(code);
     }
 
-    if (script)
+    if (script) {
         uart.enqueueRxString(script);
+    }
 
     process.stdin.setEncoding('latin1');
-    if (process.stdin.isTTY)
+    if (process.stdin.isTTY) {
         process.stdin.setRawMode(true);
+    }
     if (process.stdin.isTTY && !script) {
         lineEditor = createLineEditor({
             write: function (text) { process.stdout.write(text); },
@@ -155,13 +164,15 @@ function main() {
     process.stdin.resume();
     process.stdin.on('data', function (chunk) {
         for (var i = 0; i < chunk.length; ++i) {
-            if (chunk.charCodeAt(i) === 3)
+            if (chunk.charCodeAt(i) === 3) {
                 shutdown(0);
+            }
         }
-        if (lineEditor)
+        if (lineEditor) {
             lineEditor.handleChunk(chunk);
-        else
+        } else {
             uart.enqueueRxString(chunk);
+        }
     });
 
     process.on('SIGINT', function () {
@@ -172,16 +183,18 @@ function main() {
         var now = process.hrtime.bigint();
         var elapsedSeconds = Number(now - lastTick) / 1000000000;
         lastTick = now;
-        if (elapsedSeconds > 0.25)
+        if (elapsedSeconds > 0.25) {
             elapsedSeconds = 0.25;
+        }
         machine.advanceRealTime(elapsedSeconds);
 
-        if (machine.monitor && machine.monitor.active)
+        if (machine.monitor && machine.monitor.active) {
             machine.pollMonitor();
-        else if (machine.pendingRun)
+        } else if (machine.pendingRun) {
             machine.runUntilInstruction(function (m) { return m.cpu.context.halt; }, 1000);
-        else
+        } else {
             machine.runBlocks(1000);
+        }
 
         if (machine.pendingRun) {
             var executedInstructions = (machine.cpu.context.i - machine.pendingRun.beforeInstructions) >>> 0;
@@ -191,8 +204,9 @@ function main() {
                 machine.pendingRun = null;
                 machine.cpu.context.halt = true;
                 uart.writeString('\r\nRUN LIMIT PC=' + monitorCommands.hex(machine.cpu.context.pc, 8) + ' INS=' + executedInstructions + '\n');
-                if (machine.monitor)
+                if (machine.monitor) {
                     machine.monitor.enter();
+                }
             }
         }
 
@@ -203,27 +217,31 @@ function main() {
             machine.clearFault();
         }
 
-        if (lineEditor && machine.monitor && machine.monitor.active && !lastMonitorActive)
+        if (lineEditor && machine.monitor && machine.monitor.active && !lastMonitorActive) {
             lineEditor.resetTransientInput();
+        }
 
         flushOutput();
         lastMonitorActive = !!(machine.monitor && machine.monitor.active);
 
-        if (machine.requestExit)
+        if (machine.requestExit) {
             shutdown(0);
+        }
 
         if (exitOnMonitor && machine.monitor && machine.monitor.active && uart.rx.length === 0) {
             settledMonitorTicks += 1;
-            if (settledMonitorTicks >= 3)
+            if (settledMonitorTicks >= 3) {
                 shutdown(0);
+            }
         } else {
             settledMonitorTicks = 0;
         }
     }, 10);
 }
 
-if (require.main === module)
+if (require.main === module) {
     main();
+}
 
 module.exports = {
     buildMachine: buildMachine

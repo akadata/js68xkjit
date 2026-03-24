@@ -20,12 +20,15 @@ Video.prototype.reset = function () {
 };
 
 Video.prototype.readRegister = function (offset) {
-    if (offset < 4)
+    if (offset < 4) {
         return (this.control >>> ((3 - offset) * 8)) & 0xff;
-    if (offset >= 4 && offset < 8)
+    }
+    if (offset >= 4 && offset < 8) {
         return (this.cursor >>> ((7 - offset) * 8)) & 0xff;
-    if (offset >= 8 && offset < 12)
+    }
+    if (offset >= 8 && offset < 12) {
         return ((this.columns * this.rows) >>> ((11 - offset) * 8)) & 0xff;
+    }
     return 0;
 };
 
@@ -62,18 +65,21 @@ Video.prototype.region = function () {
         device: self,
         read8: function (address) {
             var offset = (address - self.start) >>> 0;
-            if (offset < 0x40)
+            if (offset < 0x40) {
                 return self.readRegister(offset);
-            if (offset < 0x40 + self.buffer.length)
+            }
+            if (offset < 0x40 + self.buffer.length) {
                 return self.buffer[offset - 0x40] & 0xff;
+            }
             return 0;
         },
         write8: function (address, value) {
             var offset = (address - self.start) >>> 0;
-            if (offset < 0x40)
+            if (offset < 0x40) {
                 self.writeRegister(offset, value);
-            else if (offset < 0x40 + self.buffer.length)
+            } else if (offset < 0x40 + self.buffer.length) {
                 self.writeCell(offset, value);
+            }
         }
     };
 };

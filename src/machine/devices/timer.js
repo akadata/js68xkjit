@@ -44,14 +44,18 @@ Timer.prototype.region = function () {
         device: self,
         read8: function (address) {
             var offset = (address - self.start) >>> 0;
-            if (offset < 4)
+            if (offset < 4) {
                 return (self.count >>> ((3 - offset) * 8)) & 0xff;
-            if (offset < 8)
+            }
+            if (offset < 8) {
                 return (self.reload >>> ((7 - offset) * 8)) & 0xff;
-            if (offset < 12)
+            }
+            if (offset < 12) {
                 return offset === 11 ? self.control & 0xff : 0;
-            if (offset < 16)
+            }
+            if (offset < 16) {
                 return offset === 15 ? self.status() & 0xff : 0;
+            }
             return 0;
         },
         write8: function (address, value) {
@@ -68,13 +72,15 @@ Timer.prototype.region = function () {
             if (offset < 12) {
                 if (offset === 11) {
                     self.control = value & 0xff;
-                    if ((self.control & Timer.CONTROL_ENABLE) !== 0 && self.count === 0)
+                    if ((self.control & Timer.CONTROL_ENABLE) !== 0 && self.count === 0) {
                         self.count = self.reload >>> 0;
+                    }
                 }
                 return;
             }
-            if (offset < 16 && offset === 15 && (value & Timer.STATUS_PENDING) !== 0)
+            if (offset < 16 && offset === 15 && (value & Timer.STATUS_PENDING) !== 0) {
                 self.clearPending();
+            }
         }
     };
 };
@@ -86,10 +92,12 @@ Timer.prototype.writeByte = function (current, byteIndex, value) {
 
 Timer.prototype.status = function () {
     var status = 0;
-    if (this.pending)
+    if (this.pending) {
         status |= Timer.STATUS_PENDING;
-    if ((this.control & Timer.CONTROL_ENABLE) !== 0)
+    }
+    if ((this.control & Timer.CONTROL_ENABLE) !== 0) {
         status |= Timer.STATUS_RUNNING;
+    }
     return status;
 };
 
@@ -100,8 +108,9 @@ Timer.prototype.clearPending = function () {
 Timer.prototype.raiseInterrupt = function () {
     this.ticks = (this.ticks + 1) >>> 0;
     this.pending = true;
-    if (this.intc && (this.control & Timer.CONTROL_IRQ_ENABLE) !== 0)
+    if (this.intc && (this.control & Timer.CONTROL_IRQ_ENABLE) !== 0) {
         this.intc.raise(this.irqLevel);
+    }
 };
 
 Timer.prototype.acknowledge = function () {
@@ -110,12 +119,14 @@ Timer.prototype.acknowledge = function () {
 
 Timer.prototype.advance = function (ticks) {
     ticks >>>= 0;
-    if ((this.control & Timer.CONTROL_ENABLE) === 0 || ticks === 0)
+    if ((this.control & Timer.CONTROL_ENABLE) === 0 || ticks === 0) {
         return;
+    }
 
     while (ticks !== 0) {
-        if (this.count === 0)
+        if (this.count === 0) {
             this.count = this.reload >>> 0;
+        }
         var step = ticks < this.count ? ticks : this.count;
         this.count = (this.count - step) >>> 0;
         ticks = (ticks - step) >>> 0;
@@ -131,11 +142,13 @@ Timer.prototype.advance = function (ticks) {
 };
 
 Timer.prototype.advanceTime = function (seconds) {
-    if ((this.control & Timer.CONTROL_ENABLE) === 0 || !(seconds > 0))
+    if ((this.control & Timer.CONTROL_ENABLE) === 0 || !(seconds > 0)) {
         return;
+    }
     this.fractionalTicks += seconds * this.baseHz;
-    if (this.fractionalTicks < 1)
+    if (this.fractionalTicks < 1) {
         return;
+    }
     var ticks = Math.floor(this.fractionalTicks);
     this.fractionalTicks -= ticks;
     this.advance(ticks >>> 0);

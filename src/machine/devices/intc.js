@@ -15,10 +15,12 @@ Intc.prototype.region = function () {
         device: self,
         read8: function (address) {
             var offset = (address - self.start) >>> 0;
-            if (offset < 4)
+            if (offset < 4) {
                 return (self.pending >>> ((3 - offset) * 8)) & 0xff;
-            if (offset < 8)
+            }
+            if (offset < 8) {
                 return (self.mask >>> ((7 - offset) * 8)) & 0xff;
+            }
             return 0;
         },
         write8: function (address, value) {
@@ -31,8 +33,9 @@ Intc.prototype.region = function () {
             }
             if (offset >= 8 && offset < 12) {
                 var level = value & 7;
-                if (level !== 0)
+                if (level !== 0) {
                     self.acknowledge(level);
+                }
             }
         }
     };
@@ -48,22 +51,25 @@ Intc.prototype.reset = function () {
 };
 
 Intc.prototype.raise = function (level) {
-    if (level < 1 || level > 7)
+    if (level < 1 || level > 7) {
         throw new RangeError('invalid IRQ level');
+    }
     this.pending |= (1 << level);
 };
 
 Intc.prototype.acknowledge = function (level) {
     this.pending &= ~(1 << level);
-    if (this.handlers[level])
+    if (this.handlers[level]) {
         this.handlers[level]();
+    }
 };
 
 Intc.prototype.highestPending = function () {
     var active = this.pending & this.mask;
     for (var level = 7; level >= 1; --level) {
-        if (active & (1 << level))
+        if (active & (1 << level)) {
             return level;
+        }
     }
     return 0;
 };

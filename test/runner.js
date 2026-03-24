@@ -36,12 +36,14 @@ function parseArgs(argv) {
 
 function ensureArtifacts(args) {
 	var buildArgs = [];
-	if (args.clean)
+	if (args.clean) {
 		buildArgs.push('--clean');
-	if (args.rebuildAll)
+	}
+	if (args.rebuildAll) {
 		buildArgs.push('--rebuild-all');
-	else if (args.rebuildMissing)
+	} else if (args.rebuildMissing) {
 		buildArgs.push('--rebuild-missing');
+	}
 	childProcess.execFileSync(process.execPath, [ path.join(__dirname, 'build.js') ].concat(buildArgs), {
 		stdio: 'inherit'
 	});
@@ -459,23 +461,29 @@ function parseCheck(cpu, inst) {
 var passed = 0;
 var failed = [];
 function errorMessage(err) {
-	if (err && err.message)
+	if (err && err.message) {
 		return err.message;
-	if (typeof err === 'string')
+	}
+	if (typeof err === 'string') {
 		return err;
+	}
 	return String(err);
 }
 
 function classifyFailure(message, logs) {
 	var logText = logs.join('\n');
-	if (deferredInvalidSmoke[currentTest])
+	if (deferredInvalidSmoke[currentTest]) {
 		return 'deferred invalid smoke test';
-	if (message.indexOf('malformed check block:') === 0)
+	}
+	if (message.indexOf('malformed check block:') === 0) {
 		return 'malformed placeholder test';
-	if (/not impl|simplified/i.test(logText))
+	}
+	if (/not impl|simplified/i.test(logText)) {
 		return 'not implemented';
-	if (/Offset is outside the bounds of the DataView|test did not reach check handler|unknown command:/i.test(message))
+	}
+	if (/Offset is outside the bounds of the DataView|test did not reach check handler|unknown command:/i.test(message)) {
 		return 'control-flow\/stack fault';
+	}
 	return 'wrong result\/flags';
 }
 
@@ -510,15 +518,17 @@ json.tests.forEach(function (test) {
 			logs.push(message);
 			console.log('j68: ' + message);
 		};
-		for (var i = 0; i < file.length; ++i)
+		for (var i = 0; i < file.length; ++i) {
 		    cpu.context.s8(i, file[i]|0);
+		}
 		cpu.context.pc = 0;
 			var harnessEntry = harness[test];
 			if (harnessEntry) {
-				if (typeof harnessEntry === 'function')
+				if (typeof harnessEntry === 'function') {
 					harnessEntry(cpu);
-				else if (harnessEntry.setup)
+				} else if (harnessEntry.setup) {
 					harnessEntry.setup(cpu);
+				}
 			}
 			var success = false;
 			cpu.context.f = function (inst) {
@@ -539,18 +549,21 @@ json.tests.forEach(function (test) {
 		failed.push({ test: test, error: err, message: message, category: category });
 		categories[category].push(test);
 		console.error('FAIL ' + test + ' [' + category + ']: ' + message);
-		if (failFast)
+		if (failFast) {
 			throw err;
+		}
 	}
 });
 
 console.log('');
 console.log('Passed: ' + passed + '/' + json.tests.length);
 console.log('Failed: ' + failed.length + '/' + (json.tests.length - deferred.length));
-if (deferred.length > 0)
+if (deferred.length > 0) {
 	console.log('Deferred: ' + deferred.length + '/' + json.tests.length);
-if (skipFile)
+}
+if (skipFile) {
 	console.log('Skipped: ' + skipped);
+}
 if (failed.length > 0 || deferred.length > 0) {
 	console.log('');
 	categoryOrder.forEach(function (name) {
@@ -564,6 +577,7 @@ if (failed.length > 0 || deferred.length > 0) {
 	deferred.forEach(function (entry) {
 		console.log(entry.test + ' [' + entry.category + ']: ' + entry.message);
 	});
-	if (failed.length > 0)
+	if (failed.length > 0) {
 		process.exitCode = 1;
+	}
 }

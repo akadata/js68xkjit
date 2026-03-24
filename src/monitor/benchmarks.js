@@ -56,15 +56,18 @@ var BENCHMARKS = {
 
 function prepare(id, count) {
     var definition = BENCHMARKS[id];
-    if (!definition)
+    if (!definition) {
         return null;
+    }
     var image = new Uint8Array(definition.image);
-    if (definition.countWidth === 2)
+    if (definition.countWidth === 2) {
         write16(image, definition.countOffset, ((count - 1) & 0xffff) >>> 0);
-    else
+    }  else {
         write32(image, definition.countOffset, count >>> 0);
-    if (definition.dataOffset >= 0)
+    }
+    if (definition.dataOffset >= 0) {
         write32(image, definition.dataOffset, definition.dataAddress >>> 0);
+    }
     return {
         id: id,
         name: definition.name,

@@ -36,8 +36,9 @@ var Sound = require('../../src/machine/devices/sound');
         assert.equal(wav.readUInt32LE(40) > 0, true, 'wav file did not contain audio payload');
         assert.equal(wav.length > 44, true, 'wav file did not contain PCM samples');
     } finally {
-        if (fs.existsSync(wavPath))
+        if (fs.existsSync(wavPath)) {
             fs.unlinkSync(wavPath);
+        }
     }
 })();
 

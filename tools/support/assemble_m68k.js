@@ -11,8 +11,9 @@ function normalizeArgs(cpuTypeOrOptions, maybeOptions) {
         cpuType = cpuTypeOrOptions || process.env.J68_CPU_TYPE || '68000';
         options = Object.assign({}, maybeOptions || {});
     }
-    if (options.fromSource === undefined)
+    if (options.fromSource === undefined) {
         options.fromSource = process.env.J68_FROM_SOURCE === '1';
+    }
     return {
         cpuType: cpuType,
         options: options

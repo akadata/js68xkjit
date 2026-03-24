@@ -26,8 +26,9 @@ function tool(name) {
 function firstTool(candidates) {
     for (var i = 0; i < candidates.length; ++i) {
         var found = tool(candidates[i]);
-        if (found)
+        if (found) {
             return found;
+        }
     }
     return '';
 }

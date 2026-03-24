@@ -107,8 +107,9 @@ var bootMachine = require('./support/boot_machine').bootMachine;
     machine.write16(base + registers.GLOBAL_CTRL, registers.GLOBAL_CTRL_BITS.ENABLE);
     machine.write16(base + registers.CH_CTRL, noiseCtrl);
 
-    for (i = 0; i < 32; ++i)
+    for (i = 0; i < 32; ++i) {
         samples.push(sound.generateSample());
+    }
 
     assert.equal(samples.some(function (value) { return value > 0; }), true, 'noise waveform never produced a positive sample');
     assert.equal(samples.some(function (value) { return value < 0; }), true, 'noise waveform never produced a negative sample');

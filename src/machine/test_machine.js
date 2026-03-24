@@ -11,18 +11,21 @@ var CommandLoop = require('../monitor/command_loop');
 // Gary, Autoconfig, or Exec behavior should be inferred from the address map.
 
 function toUint8Array(data, size) {
-    if (!data)
+    if (!data) {
         return new Uint8Array(size);
+    }
     if (data instanceof Uint8Array) {
-        if (data.length > size)
+        if (data.length > size) {
             throw new RangeError('image size mismatch');
+        }
         var copy = new Uint8Array(size);
         copy.set(data);
         return copy;
     }
     if (Buffer.isBuffer(data)) {
-        if (data.length > size)
+        if (data.length > size) {
             throw new RangeError('image size mismatch');
+        }
         var fromBuffer = new Uint8Array(size);
         fromBuffer.set(data);
         return fromBuffer;
@@ -31,10 +34,12 @@ function toUint8Array(data, size) {
 }
 
 function resolveCpuType(cpuType) {
-    if (cpuType === undefined || cpuType === null)
+    if (cpuType === undefined || cpuType === null) {
         return j68.j68.TYPE_MC68000;
-    if (typeof cpuType === 'number')
+    }
+    if (typeof cpuType === 'number') {
         return cpuType;
+    }
 
     switch (String(cpuType).toLowerCase()) {
         case '68000':
@@ -54,10 +59,12 @@ function resolveCpuType(cpuType) {
 }
 
 function parseSizeOption(value, envName, fallback) {
-    if (value !== undefined)
+    if (value !== undefined) {
         return value >>> 0;
-    if (!process.env[envName])
+    }
+    if (!process.env[envName]) {
         return fallback >>> 0;
+    }
     return parseInt(process.env[envName], 0) >>> 0;
 }
 
@@ -66,10 +73,12 @@ function TestMachine(options) {
 
     this.chipRamSize = parseSizeOption(options.chipRamSize, 'J68_CHIP_RAM_SIZE', memoryMap.CHIP_RAM_MAX_SIZE);
     this.fastRamSize = parseSizeOption(options.fastRamSize, 'J68_FAST_RAM_SIZE', memoryMap.FAST_RAM_MAX_SIZE);
-    if (this.chipRamSize > memoryMap.CHIP_RAM_MAX_SIZE)
-        throw new RangeError('chip RAM exceeds Amiga 24-bit chip RAM window');
-    if (this.fastRamSize > memoryMap.FAST_RAM_MAX_SIZE)
-        throw new RangeError('fast RAM exceeds Amiga 24-bit fast RAM window');
+    if (this.chipRamSize > memoryMap.CHIP_RAM_MAX_SIZE) {
+        throw new RangeError('chip RAM exceeds 24-bit chip RAM window');
+    }
+    if (this.fastRamSize > memoryMap.FAST_RAM_MAX_SIZE) {
+        throw new RangeError('fast RAM exceeds 24-bit fast RAM window');
+    }
 
     this.chipRam = toUint8Array(options.chipRam, this.chipRamSize);
     this.fastRam = toUint8Array(options.fastRam, this.fastRamSize);
@@ -81,8 +90,9 @@ function TestMachine(options) {
         strictAlignment: true
     });
     this.bus.map(Bus.createMemoryRegion('chip-ram', memoryMap.CHIP_RAM_START, this.chipRamSize, this.chipRam, true));
-    if (this.fastRamSize !== 0)
+    if (this.fastRamSize !== 0) {
         this.bus.map(Bus.createMemoryRegion('fast-ram', memoryMap.FAST_RAM_START, this.fastRamSize, this.fastRam, true));
+    }
     this.bus.map(Bus.createMemoryRegion('rom', memoryMap.ROM_START, memoryMap.ROM_SIZE, this.rom, false));
 
     this.cpu = new j68.j68();
@@ -152,24 +162,27 @@ TestMachine.prototype.isOverlayAddress = function (address) {
 
 TestMachine.prototype.read8 = function (address, meta) {
     address = this.bus.normalizeAddress(address);
-    if (this.isOverlayAddress(address))
+    if (this.isOverlayAddress(address)) {
         return this.rom[address - memoryMap.RESET_OVERLAY_START] & 0xff;
+    }
     return this.bus.read8(address, meta);
 };
 
 TestMachine.prototype.read16 = function (address, meta) {
     address = this.bus.normalizeAddress(address);
     this.bus.assertAligned(address, 2);
-    if (this.isOverlayAddress(address) || this.isOverlayAddress(address + 1))
+    if (this.isOverlayAddress(address) || this.isOverlayAddress(address + 1)) {
         return ((this.read8(address, meta) << 8) | this.read8(address + 1, meta)) >>> 0;
+    }
     return this.bus.read16(address, meta);
 };
 
 TestMachine.prototype.read32 = function (address, meta) {
     address = this.bus.normalizeAddress(address);
     this.bus.assertAligned(address, 4);
-    if (this.isOverlayAddress(address) || this.isOverlayAddress(address + 3))
+    if (this.isOverlayAddress(address) || this.isOverlayAddress(address + 3)) {
         return (((this.read16(address, meta) << 16) >>> 0) | this.read16(address + 2, meta)) >>> 0;
+    }
     return this.bus.read32(address, meta);
 };
 
@@ -197,8 +210,9 @@ TestMachine.prototype.currentFunctionCode = function (kind) {
 
     context.syncSr();
     supervisor = (context.sr & 0x2000) !== 0;
-    if (kind === 'fetch')
+    if (kind === 'fetch') {
         return supervisor ? Bus.FC_SUPERVISOR_PROGRAM : Bus.FC_USER_PROGRAM;
+    }
     return supervisor ? Bus.FC_SUPERVISOR_DATA : Bus.FC_USER_DATA;
 };
 
@@ -208,8 +222,9 @@ TestMachine.prototype.busMeta = function (kind, value) {
         kind: kind,
         ipl: this.getInterruptLevel()
     };
-    if (value !== undefined)
+    if (value !== undefined) {
         meta.value = value >>> 0;
+    }
     return meta;
 };
 
@@ -217,19 +232,34 @@ TestMachine.prototype.attachContextBus = function () {
     var self = this;
     var context = this.cpu.context;
 
-    context.l8 = function (address) { return self.read8(address >>> 0, self.busMeta('read')); };
-    context.l16 = function (address) { return self.read16(address >>> 0, self.busMeta('read')); };
-    context.l32 = function (address) { return self.read32(address >>> 0, self.busMeta('read')); };
-    context.fetch = function (address) { return self.read16(address >>> 0, self.busMeta('fetch')); };
+    context.l8 = function (address) { 
+        return self.read8(address >>> 0, self.busMeta('read')); 
+    };
+    context.l16 = function (address) { 
+        return self.read16(address >>> 0, self.busMeta('read')); 
+    };
+    context.l32 = function (address) { 
+        return self.read32(address >>> 0, self.busMeta('read')); 
+    };
+    context.fetch = function (address) { 
+        return self.read16(address >>> 0, self.busMeta('fetch')); 
+    };
 
-    context.s8 = function (address, data) { return self.write8(address >>> 0, data & 0xff, self.busMeta('write', data)); };
-    context.s16 = function (address, data) { return self.write16(address >>> 0, data & 0xffff, self.busMeta('write', data)); };
-    context.s32 = function (address, data) { return self.write32(address >>> 0, data >>> 0, self.busMeta('write', data)); };
+    context.s8 = function (address, data) { 
+        return self.write8(address >>> 0, data & 0xff, self.busMeta('write', data)); 
+    };
+    context.s16 = function (address, data) { 
+        return self.write16(address >>> 0, data & 0xffff, self.busMeta('write', data)); 
+    };
+    context.s32 = function (address, data) { 
+        return self.write32(address >>> 0, data >>> 0, self.busMeta('write', data)); 
+    };
 };
 
 TestMachine.prototype.mapDevice = function (region) {
-    if (region && typeof region.region === 'function')
+    if (region && typeof region.region === 'function') {
         return this.bus.attach(region);
+    }
     return this.bus.map(region);
 };
 
@@ -241,10 +271,12 @@ TestMachine.prototype.attachIntc = function (intc) {
 
 TestMachine.prototype.attachTimer = function (timer) {
     this.timers.push(timer);
-    if (this.intc && !timer.intc)
+    if (this.intc && !timer.intc) {
         timer.attachIntc(this.intc);
-    if (this.intc)
+    }
+    if (this.intc) {
         this.intc.registerSource(timer.irqLevel, timer.acknowledge.bind(timer));
+    }
     this.mapDevice(timer);
     return timer;
 };
@@ -258,10 +290,12 @@ TestMachine.prototype.attachMonitor = function (uart, options) {
     this.monitor = new CommandLoop(this, uart, options);
     this.monitorSuppressEnterPrompt = false;
     this.cpu.context.f = function (inst) {
-        if (self.monitorTrapHandler && self.monitorTrapHandler(inst))
+        if (self.monitorTrapHandler && self.monitorTrapHandler(inst)) {
             return;
-        if (inst !== 0xa000)
+        }
+        if (inst !== 0xa000) {
             throw new Error('unsupported monitor service $' + inst.toString(16));
+        }
         self.monitor.enter(self.monitorSuppressEnterPrompt);
         self.monitorSuppressEnterPrompt = false;
         self.cpu.context.halt = true;
@@ -305,53 +339,62 @@ TestMachine.prototype.acceptInterrupt = function (level) {
     context.pc = this.read32((vectorBase + (vector << 2)) >>> 0) >>> 0;
     context.c = {};
     context.halt = false;
-    if (this.intc)
+    if (this.intc) {
         this.intc.acknowledge(level);
+    }
 };
 
 TestMachine.prototype.advanceDevices = function (instructions) {
-    if (this.realTimeDevices)
+    if (this.realTimeDevices) {
         return;
-    if (instructions <= 0)
+    }
+    if (instructions <= 0) {
         return;
+    }
     this.bus.advance(instructions);
 };
 
 TestMachine.prototype.advanceRealTime = function (seconds) {
-    if (!(seconds > 0))
+    if (!(seconds > 0)) {
         return;
+    }
     this.bus.advanceTime(seconds);
 };
 
 TestMachine.prototype.pollInterrupts = function () {
     var level = this.getInterruptLevel();
-    if (level === 0)
+    if (level === 0) {
         return 0;
+    }
     var currentMask = (this.cpu.context.sr >> 8) & 7;
-    if (level <= currentMask)
+    if (level <= currentMask) {
         return 0;
+    }
     this.acceptInterrupt(level);
     return level;
 };
 
 TestMachine.prototype.getInterruptLevel = function () {
-    if (this.intc)
+    if (this.intc) {
         return this.intc.highestPending();
+    }
     return this.bus.resolveIpl();
 };
 
 TestMachine.prototype.runBlock = function () {
     var context = this.cpu.context;
     this.pollInterrupts();
-    if (context.halt)
+    if (context.halt) {
         return false;
+    }
     try {
         var pc = context.pc >>> 0;
         var beforeInstructions = context.i >>> 0;
-        if (!context.c[pc])
+        if (!context.c[pc]) {
             context.c[pc] = this.withSuppressedCoreNoise(function () {
                 return this.cpu.compile();
             }.bind(this));
+        }
         this.withSuppressedCoreNoise(function () {
             context.c[pc](context);
         });
@@ -366,8 +409,9 @@ TestMachine.prototype.runBlock = function () {
 TestMachine.prototype.runBlocks = function (maxBlocks) {
     var blocks = maxBlocks === undefined ? 1 : maxBlocks | 0;
     for (var i = 0; i < blocks; ++i) {
-        if (!this.runBlock())
+        if (!this.runBlock()) {
             break;
+        }
     }
 };
 
@@ -379,10 +423,12 @@ TestMachine.prototype.pollMonitor = function () {
 TestMachine.prototype.runUntil = function (predicate, maxBlocks) {
     var limit = maxBlocks === undefined ? 1000 : maxBlocks | 0;
     for (var i = 0; i < limit; ++i) {
-        if (predicate(this))
+        if (predicate(this)) {
             return true;
-        if (!this.runBlock())
+        }
+        if (!this.runBlock()) {
             return predicate(this);
+        }
     }
     return predicate(this);
 };
@@ -390,10 +436,12 @@ TestMachine.prototype.runUntil = function (predicate, maxBlocks) {
 TestMachine.prototype.runUntilInstruction = function (predicate, maxInstructions) {
     var limit = maxInstructions === undefined ? 1000 : maxInstructions | 0;
     for (var i = 0; i < limit; ++i) {
-        if (predicate(this))
+        if (predicate(this)) {
             return true;
-        if (!this.stepInstruction())
+        }
+        if (!this.stepInstruction()) {
             return predicate(this);
+        }
     }
     return predicate(this);
 };
@@ -416,10 +464,12 @@ TestMachine.prototype.stepInstruction = function () {
         var writesPc = !!(decoded.in && decoded.in.pc);
         var i;
 
-        if (decoded.in && decoded.in.sr)
+        if (decoded.in && decoded.in.sr) {
             lines.push('c.syncSr();');
-        if (decoded.in && decoded.in.pc)
+        }
+        if (decoded.in && decoded.in.pc) {
             lines.push('c.pc=' + (decoded.pc >>> 0) + ';');
+        }
         lines = lines.concat(Array.isArray(code) ? code.slice() : [ code || '' ]);
         for (i = 0; i < lines.length; ++i) {
             if (/c\.pc\s*=/.test(lines[i])) {
@@ -429,13 +479,16 @@ TestMachine.prototype.stepInstruction = function () {
         }
         for (i = 0; i < flagOrder.length; ++i) {
             var flag = flagOrder[i];
-            if (outFlags[flag])
+            if (outFlags[flag]) {
                 lines.push('c.c' + flag + '=' + outFlags[flag] + ';');
+            }
         }
-        if (!writesPc)
+        if (!writesPc) {
             lines.push('c.pc=' + (decoded.pc >>> 0) + ';');
-        if (decoded.error)
+        }
+        if (decoded.error) {
             lines.push('c.halt=true;');
+        }
         lines.push('c.i+=1;');
 
         this.withSuppressedCoreNoise(function () {
@@ -451,24 +504,28 @@ TestMachine.prototype.stepInstruction = function () {
 
 TestMachine.prototype.loadRomBytes = function (address, bytes) {
     address >>>= 0;
-    if (address < memoryMap.ROM_START || address + bytes.length - 1 > memoryMap.ROM_END)
+    if (address < memoryMap.ROM_START || address + bytes.length - 1 > memoryMap.ROM_END) {
         throw new RangeError('ROM write outside mapped range');
+    }
     this.rom.set(bytes, address - memoryMap.ROM_START);
 };
 
 TestMachine.prototype.loadChipRamBytes = function (address, bytes) {
     address >>>= 0;
-    if (address < memoryMap.CHIP_RAM_START || address + bytes.length - 1 >= memoryMap.CHIP_RAM_START + this.chipRam.length)
+    if (address < memoryMap.CHIP_RAM_START || address + bytes.length - 1 >= memoryMap.CHIP_RAM_START + this.chipRam.length) {
         throw new RangeError('chip RAM write outside mapped range');
+    }
     this.chipRam.set(bytes, address - memoryMap.CHIP_RAM_START);
 };
 
 TestMachine.prototype.loadFastRamBytes = function (address, bytes) {
     address >>>= 0;
-    if (this.fastRamSize === 0)
+    if (this.fastRamSize === 0) {
         throw new RangeError('fast RAM not configured');
-    if (address < memoryMap.FAST_RAM_START || address + bytes.length - 1 >= memoryMap.FAST_RAM_START + this.fastRam.length)
+    }
+    if (address < memoryMap.FAST_RAM_START || address + bytes.length - 1 >= memoryMap.FAST_RAM_START + this.fastRam.length) {
         throw new RangeError('fast RAM write outside mapped range');
+    }
     this.fastRam.set(bytes, address - memoryMap.FAST_RAM_START);
 };
 

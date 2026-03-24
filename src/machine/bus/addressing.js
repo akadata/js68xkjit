@@ -5,10 +5,12 @@ function normalizeAddress(address, mask) {
 }
 
 function assertAligned(address, size, strictAlignment) {
-    if (!strictAlignment || size === 1)
+    if (!strictAlignment || size === 1) {
         return;
-    if (((address >>> 0) & 1) !== 0)
+    }
+    if (((address >>> 0) & 1) !== 0) {
         throw new errors.AlignmentError(address, size);
+    }
 }
 
 module.exports = {

@@ -49,7 +49,9 @@ var Sound = require('../../src/machine/devices/sound');
         sound.channels[0].envState = 'attack';
         sound.advance(50000);
         setImmediate(function () {
-            assert.equal(errors.some(function (line) { return /audio backend ffplay pipe closed/.test(line); }), true, 'broken ffplay pipe did not degrade cleanly');
+            assert.equal(errors.some(function (line) { 
+                return /audio backend ffplay pipe closed/.test(line); 
+            }), true, 'broken ffplay pipe did not degrade cleanly');
             sound.advance(50000);
             console.error = originalError;
             childProcess.spawn = originalSpawn;

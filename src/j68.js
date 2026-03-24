@@ -39,15 +39,29 @@ exports.j68 = (function () {
         this.t = new Uint32Array(1);  // Work.
 
         // TODO: Check memory alignments, do cache invalidation.
-        this.l8 = function (address) { return this.m.getUint8(address); };
-        this.l16 = function (address) { return this.m.getUint16(address); };
-        this.l32 = function (address) { return this.m.getUint32(address); };
-        this.fetch = function (address) { return this.m.getUint16(address); };
+        this.l8 = function (address) { 
+            return this.m.getUint8(address); 
+        };
+        this.l16 = function (address) { 
+            return this.m.getUint16(address); 
+        };
+        this.l32 = function (address) { 
+            return this.m.getUint32(address); 
+        };
+        this.fetch = function (address) { 
+            return this.m.getUint16(address); 
+        };
 
         // Returns false if the running code is modified.
-        this.s8 = function (address, data) { this.m.setUint8(address, data); return true; };
-        this.s16 = function (address, data) { this.m.setUint16(address, data); return true; };
-        this.s32 = function (address, data) { this.m.setUint32(address, data); return true; };
+        this.s8 = function (address, data) { 
+            this.m.setUint8(address, data); return true; 
+        };
+        this.s16 = function (address, data) { 
+            this.m.setUint16(address, data); return true; 
+        };
+        this.s32 = function (address, data) { 
+            this.m.setUint32(address, data); return true; 
+        };
 
         // F-line emulation hook.        
         this.f = function (inst) {};
@@ -57,11 +71,21 @@ exports.j68 = (function () {
     
     Context.prototype.syncSr = function () {
         this.sr &= 0xff00;
-        if (this.cx) this.sr |= 0x10;
-        if (this.cn) this.sr |= 0x08;
-        if (this.cz) this.sr |= 0x04;
-        if (this.cv) this.sr |= 0x02;
-        if (this.cc) this.sr |= 0x01;
+        if (this.cx) {
+            this.sr |= 0x10;
+        }
+        if (this.cn) {
+            this.sr |= 0x08;
+        }
+        if (this.cz) {
+            this.sr |= 0x04;
+        }
+        if (this.cv) {
+            this.sr |= 0x02;
+        }
+        if (this.cc) {
+            this.sr |= 0x01;
+        }
     };
     
     Context.prototype.setCcr = function (ccr) {
@@ -108,6 +132,22 @@ exports.j68 = (function () {
         this.pc = this.l32(vector << 2) >>> 0;
     };
 
+    Context.prototype.saveActiveSp = function () {
+        if (this.sr & 0x2000) {
+            this.ssp = this.a[7] >>> 0;
+        } else {
+            this.usp = this.a[7] >>> 0;
+        }
+    };
+
+    Context.prototype.loadActiveSp = function () {
+        if (this.sr & 0x2000) {
+            this.a[7] = this.ssp >>> 0;
+        } else {
+            this.a[7] = this.usp >>> 0;
+        }
+    };
+
     Context.prototype.bitFieldReadMem = function (base, offset, width) {
         var value = 0 >>> 0;
         for (var i = 0; i < width; ++i) {
@@ -129,10 +169,11 @@ exports.j68 = (function () {
             var byteValue = this.l8(address);
             var srcBit = (value >>> (width - 1 - i)) & 1;
             var mask = 1 << (7 - bitInByte);
-            if (srcBit)
+            if (srcBit) {
                 byteValue |= mask;
-            else
+            } else {
                 byteValue &= ~mask;
+            }
             this.s8(address, byteValue);
         }
     };
@@ -152,10 +193,11 @@ exports.j68 = (function () {
             var regBit = (offset + i) & 31;
             var srcBit = (field >>> (width - 1 - i)) & 1;
             var mask = (1 << (31 - regBit)) >>> 0;
-            if (srcBit)
+            if (srcBit) {
                 result = (result | mask) >>> 0;
-            else
+            } else {
                 result = (result & (~mask >>> 0)) >>> 0;
+            }
         }
         return result >>> 0;
     };
@@ -166,27 +208,31 @@ exports.j68 = (function () {
     };
 
     Context.prototype.bitFieldSignExtend = function (value, width) {
-        if (width === 32)
+        if (width === 32) {
             return value >>> 0;
+        }
         var signBit = 1 << (width - 1);
         var mask = (1 << width) - 1;
         value &= mask;
-        if (value & signBit)
+        if (value & signBit) {
             return (value | (~mask)) >>> 0;
+        }
         return value >>> 0;
     };
 
     Context.prototype.bitFieldInsertValue = function (value, width) {
-        if (width === 32)
+        if (width === 32) {
             return value >>> 0;
+        }
         var mask = (1 << width) - 1;
         return (value & mask) >>> 0;
     };
 
     Context.prototype.bitFieldFindFirstOne = function (value, width) {
         for (var i = 0; i < width; ++i) {
-            if ((value >>> (width - 1 - i)) & 1)
+            if ((value >>> (width - 1 - i)) & 1) {
                 return i;
+            }
         }
         return width;
     };
@@ -197,10 +243,10 @@ exports.j68 = (function () {
         var srcIndex = (src >>> 2) & 3;
         var dstIndex = (dst >>> 2) & 3;
         var line = [
-            this.l32(srcBase + (((srcIndex + 0) & 3) << 2)) >>> 0,
-            this.l32(srcBase + (((srcIndex + 1) & 3) << 2)) >>> 0,
-            this.l32(srcBase + (((srcIndex + 2) & 3) << 2)) >>> 0,
-            this.l32(srcBase + (((srcIndex + 3) & 3) << 2)) >>> 0
+        this.l32(srcBase + (((srcIndex + 0) & 3) << 2)) >>> 0,
+        this.l32(srcBase + (((srcIndex + 1) & 3) << 2)) >>> 0,
+        this.l32(srcBase + (((srcIndex + 2) & 3) << 2)) >>> 0,
+        this.l32(srcBase + (((srcIndex + 3) & 3) << 2)) >>> 0
         ];
         this.s32(dstBase + (((dstIndex + 0) & 3) << 2), line[0]);
         this.s32(dstBase + (((dstIndex + 1) & 3) << 2), line[1]);
@@ -216,25 +262,29 @@ exports.j68 = (function () {
         mask &= 0xffff;
         if (predecrement) {
             for (index = 15; index >= 0; --index) {
-                if ((mask & (1 << index)) === 0)
+                if ((mask & (1 << index)) === 0) {
                     continue;
+                }
                 addr = (addr - size) >>> 0;
                 value = index < 8 ? this.d[index] : this.a[index - 8];
-                if (size === 2)
+                if (size === 2) {
                     this.s16(addr, value & 0xffff);
-                else
+                } else {
                     this.s32(addr, value >>> 0);
+                }
             }
             return addr >>> 0;
         }
         for (index = 0; index < 16; ++index) {
-            if ((mask & (1 << index)) === 0)
+            if ((mask & (1 << index)) === 0) {
                 continue;
+            }
             value = index < 8 ? this.d[index] : this.a[index - 8];
-            if (size === 2)
+            if (size === 2) {
                 this.s16(addr, value & 0xffff);
-            else
+            } else {
                 this.s32(addr, value >>> 0);
+            }
             addr = (addr + size) >>> 0;
         }
         return addr >>> 0;
@@ -247,16 +297,19 @@ exports.j68 = (function () {
         addr = addr >>> 0;
         mask &= 0xffff;
         for (index = 0; index < 16; ++index) {
-            if ((mask & (1 << index)) === 0)
+            if ((mask & (1 << index)) === 0) {
                 continue;
-            if (size === 2)
+            }
+            if (size === 2) {
                 value = this.xw(this.l16(addr));
-            else
+            } else {
                 value = this.l32(addr) >>> 0;
-            if (index < 8)
+            }
+            if (index < 8) {
                 this.d[index] = value >>> 0;
-            else
+            } else {
                 this.a[index - 8] = value >>> 0;
+            }
             addr = (addr + size) >>> 0;
         }
         return addr >>> 0;
@@ -280,8 +333,9 @@ exports.j68 = (function () {
         result = ((hi & 0x0f) << 4) | (lo & 0x0f);
 
         this.cn = (result & 0x80) !== 0;
-        if (result !== 0)
+        if (result !== 0) {
             this.cz = false;
+        }
         this.cv = (((~(dst ^ src)) & (dst ^ binary) & 0x80) !== 0);
         this.cc = carry;
         this.cx = carry;
@@ -306,8 +360,9 @@ exports.j68 = (function () {
         result = ((hi & 0x0f) << 4) | (lo & 0x0f);
 
         this.cn = (result & 0x80) !== 0;
-        if (result !== 0)
+        if (result !== 0) {
             this.cz = false;
+        }
         this.cv = ((((dst ^ src) & (dst ^ binary)) & 0x80) !== 0);
         this.cc = borrow;
         this.cx = borrow;
@@ -336,47 +391,48 @@ exports.j68 = (function () {
         for (i = 0; i < count; ++i) {
             switch (kind) {
                 case 'as':
-                    if (left) {
-                        carry = (result & highBit) !== 0;
-                        result = ((result << 1) & mask) >>> 0;
-                        if (((result & highBit) !== 0) !== carry)
-                            overflow = true;
-                    } else {
-                        carry = (result & 1) !== 0;
-                        result = (((result >>> 1) | (result & highBit)) & mask) >>> 0;
+                if (left) {
+                    carry = (result & highBit) !== 0;
+                    result = ((result << 1) & mask) >>> 0;
+                    if (((result & highBit) !== 0) !== carry) {
+                        overflow = true;
                     }
-                    x = carry;
-                    break;
+                } else {
+                    carry = (result & 1) !== 0;
+                    result = (((result >>> 1) | (result & highBit)) & mask) >>> 0;
+                }
+                x = carry;
+                break;
                 case 'ls':
-                    if (left) {
-                        carry = (result & highBit) !== 0;
-                        result = ((result << 1) & mask) >>> 0;
-                    } else {
-                        carry = (result & 1) !== 0;
-                        result = ((result >>> 1) & mask) >>> 0;
-                    }
-                    x = carry;
-                    break;
+                if (left) {
+                    carry = (result & highBit) !== 0;
+                    result = ((result << 1) & mask) >>> 0;
+                } else {
+                    carry = (result & 1) !== 0;
+                    result = ((result >>> 1) & mask) >>> 0;
+                }
+                x = carry;
+                break;
                 case 'ro':
-                    if (left) {
-                        carry = (result & highBit) !== 0;
-                        result = (((result << 1) & mask) | (carry ? 1 : 0)) >>> 0;
-                    } else {
-                        carry = (result & 1) !== 0;
-                        result = ((result >>> 1) | (carry ? highBit : 0)) >>> 0;
-                    }
-                    break;
+                if (left) {
+                    carry = (result & highBit) !== 0;
+                    result = (((result << 1) & mask) | (carry ? 1 : 0)) >>> 0;
+                } else {
+                    carry = (result & 1) !== 0;
+                    result = ((result >>> 1) | (carry ? highBit : 0)) >>> 0;
+                }
+                break;
                 case 'rox':
-                    if (left) {
-                        nextCarry = (result & highBit) !== 0;
-                        result = (((result << 1) & mask) | (x ? 1 : 0)) >>> 0;
-                    } else {
-                        nextCarry = (result & 1) !== 0;
-                        result = ((result >>> 1) | (x ? highBit : 0)) >>> 0;
-                    }
-                    carry = nextCarry;
-                    x = nextCarry;
-                    break;
+                if (left) {
+                    nextCarry = (result & highBit) !== 0;
+                    result = (((result << 1) & mask) | (x ? 1 : 0)) >>> 0;
+                } else {
+                    nextCarry = (result & 1) !== 0;
+                    result = ((result >>> 1) | (x ? highBit : 0)) >>> 0;
+                }
+                carry = nextCarry;
+                x = nextCarry;
+                break;
             }
         }
 
@@ -384,14 +440,16 @@ exports.j68 = (function () {
         this.cz = result === 0;
         this.cv = overflow;
         this.cc = carry;
-        if (kind !== 'ro' || count > 0)
+        if (kind !== 'ro' || count > 0) {
             this.cx = x;
+        }
         return result >>> 0;
     };
     
     Context.prototype.xw = function (s16) {
-        if (s16 < 0x8000)
+        if (s16 < 0x8000) {
             return s16;
+        }
         return 0xffff0000 + s16;
     };
 
@@ -411,8 +469,11 @@ exports.j68 = (function () {
         }
         var r = d32 % s16;
         this.t[0] = 0;
-        if (q === 0) this.t[0] |= 0x04;
-        else if (q & 0x8000) this.t[0] |= 0x08;
+        if (q === 0) {
+            this.t[0] |= 0x04;
+        } else if (q & 0x8000) {
+            this.t[0] |= 0x08;
+        }
         return q16 + (r << 16);
     };
 
@@ -427,8 +488,11 @@ exports.j68 = (function () {
         }
         var r = d32 % u16;
         this.t[0] = 0;
-        if (q === 0) this.t[0] |= 0x04;
-        else if (q & 0x8000) this.t[0] |= 0x08;
+        if (q === 0) {
+            this.t[0] |= 0x04;
+        } else if (q & 0x8000) {
+            this.t[0] |= 0x08;
+        }
         return ((r & 0xffff) << 16) | (q & 0xffff);
     };
 
@@ -458,8 +522,9 @@ exports.j68 = (function () {
     };
     
     j68.prototype.extS8U32 = function (s8) {
-        if (s8 < 0x80)
+        if (s8 < 0x80) {
             return s8;
+        }
         return 0xffffff00 + s8;
     };
     
@@ -477,11 +542,13 @@ exports.j68 = (function () {
 
     j68.prototype.indexRegisterExpr = function (ext) {
         var regName = ((ext & 0x8000) ? 'c.a[' : 'c.d[') + ((ext >> 12) & 7) + ']';
-        if ((ext & 0x0800) === 0)
+        if ((ext & 0x0800) === 0) {
             regName = 'c.xw(' + regName + '&0xffff)';
+        }
         var scale = (ext >> 9) & 3;
-        if (scale !== 0)
+        if (scale !== 0) {
             regName = '(' + regName + [ '<<1)', '<<2)', '<<3)' ][scale - 1];
+        }
         return regName;
     };
 
@@ -501,8 +568,9 @@ exports.j68 = (function () {
         var nextPc = extPc + 2;
         var parts = [];
 
-        if (!baseSuppress)
+        if (!baseSuppress) {
             parts.push('(' + baseExpr + ')');
+        }
 
         if (bdSize === 2) {
             parts.push('(' + this.extS16U32(this.context.fetch(nextPc)) + ')');
@@ -512,14 +580,17 @@ exports.j68 = (function () {
             nextPc += 4;
         }
 
-        if (!indexSuppress)
+        if (!indexSuppress) {
             parts.push('(' + this.indexRegisterExpr(ext) + ')');
+        }
 
-        if (iis !== 0)
+        if (iis !== 0) {
             throw console.assert(false);
+        }
 
-        if (parts.length === 0)
+        if (parts.length === 0) {
             parts.push('0');
+        }
 
         return {
             'expr': '((' + parts.join('+') + ')>>>0)',
@@ -535,98 +606,98 @@ exports.j68 = (function () {
         var disp;
         switch (mode) {
             case 0:
-                ea = 'c.d[' + r + ']';
-                return {
-                    'code': regop(ea),
-                    'pc': pc + 2
-                };
+            ea = 'c.d[' + r + ']';
+            return {
+                'code': regop(ea),
+                'pc': pc + 2
+            };
             case 1:
-                ea = 'c.a[' + r + ']';
-                return {
-                    'code': regop(ea),
-                    'pc': pc + 2
-                };
+            ea = 'c.a[' + r + ']';
+            return {
+                'code': regop(ea),
+                'pc': pc + 2
+            };
             case 2:
-                ea = 'c.a[' + r + ']';
-                return {
-                    'code': memop(ea),
-                    'pc': pc + 2
-                };
+            ea = 'c.a[' + r + ']';
+            return {
+                'code': memop(ea),
+                'pc': pc + 2
+            };
             case 3:
-                ea = 'c.a[' + r + ']';
-                return {
-                    'code': memop(ea) + ea + '+=' + ((size === 1 && r === 7) ? 2 : size) + ';',
-                    'pc': pc + 2
-                };
+            ea = 'c.a[' + r + ']';
+            return {
+                'code': memop(ea) + ea + '+=' + ((size === 1 && r === 7) ? 2 : size) + ';',
+                'pc': pc + 2
+            };
             case 4:
-                ea = 'c.a[' + r + ']';
-                return {
-                    'code': ea + '-=' + ((size === 1 && r === 7) ? 2 : size) + ';' + memop(ea),
-                    'pc': pc + 2
-                };
+            ea = 'c.a[' + r + ']';
+            return {
+                'code': ea + '-=' + ((size === 1 && r === 7) ? 2 : size) + ';' + memop(ea),
+                'pc': pc + 2
+            };
             case 5:
-                disp = this.context.fetch(pc + 2);
-                ea = 'c.a[' + r + ']+' + this.extS16U32(disp);
+            disp = this.context.fetch(pc + 2);
+            ea = 'c.a[' + r + ']+' + this.extS16U32(disp);
+            return {
+                'code': memop(ea),
+                'pc': pc + 4
+            };
+            case 6:
+            var indexedEa = this.indexedEaInfo(pc + 2, 'c.a[' + r + ']');
+            return {
+                'code': memop(indexedEa.expr),
+                'pc': indexedEa.pc
+            };
+            case 7:
+            switch (r) {
+                case 0:
+                ea = '' + this.extS16U32(this.context.fetch(pc + 2));
                 return {
                     'code': memop(ea),
                     'pc': pc + 4
                 };
-            case 6:
-                var indexedEa = this.indexedEaInfo(pc + 2, 'c.a[' + r + ']');
+                case 1:
+                ea = '' + (this.context.l32(pc + 2) >>> 0);
                 return {
-                    'code': memop(indexedEa.expr),
-                    'pc': indexedEa.pc
+                    'code': memop(ea),
+                    'pc': pc + 6
                 };
-            case 7:
-                switch (r) {
-                    case 0:
-                        ea = '' + this.extS16U32(this.context.fetch(pc + 2));
-                        return {
-                            'code': memop(ea),
-                            'pc': pc + 4
-                        };
-                    case 1:
-                        ea = '' + (this.context.l32(pc + 2) >>> 0);
-                        return {
-                            'code': memop(ea),
-                            'pc': pc + 6
-                        };
-                    case 2:
-                        disp = this.context.fetch(pc + 2);
-                        ea = '' + this.addU32S16(pc + 2, disp);
-                        return {
-                            'code': memop(ea),
-                            'pc': pc + 4
-                        };
-                    case 3:
-                        var pcIndexedEa = this.indexedEaInfo(pc + 2, '' + (pc + 2));
-                        return {
-                            'code': memop(pcIndexedEa.expr),
-                            'pc': pcIndexedEa.pc
-                        };
-                    case 4:
-                        if (size === 1) {
-                            ea = this.context.fetch(pc + 2) & 0xff;
-                            return {
-                                'code': regop(ea),
-                                'pc': pc + 4
-                            };
-                        }
-                        if (size === 2) {
-                            ea = this.context.fetch(pc + 2);
-                            return {
-                                'code': regop(ea),
-                                'pc': pc + 4
-                            };
-                        }
-                        ea = this.context.l32(pc + 2) >>> 0;
-                        return {
-                            'code': regop(ea),
-                            'pc': pc + 6
-                        }
+                case 2:
+                disp = this.context.fetch(pc + 2);
+                ea = '' + this.addU32S16(pc + 2, disp);
+                return {
+                    'code': memop(ea),
+                    'pc': pc + 4
+                };
+                case 3:
+                var pcIndexedEa = this.indexedEaInfo(pc + 2, '' + (pc + 2));
+                return {
+                    'code': memop(pcIndexedEa.expr),
+                    'pc': pcIndexedEa.pc
+                };
+                case 4:
+                if (size === 1) {
+                    ea = this.context.fetch(pc + 2) & 0xff;
+                    return {
+                        'code': regop(ea),
+                        'pc': pc + 4
+                    };
                 }
-                this.log('not impl ea mode 7 r: ' + r);
-                throw console.assert(false);
+                if (size === 2) {
+                    ea = this.context.fetch(pc + 2);
+                    return {
+                        'code': regop(ea),
+                        'pc': pc + 4
+                    };
+                }
+                ea = this.context.l32(pc + 2) >>> 0;
+                return {
+                    'code': regop(ea),
+                    'pc': pc + 6
+                }
+            }
+            this.log('not impl ea mode 7 r: ' + r);
+            throw console.assert(false);
         }
         // TODO: Implement other mode
         this.log('not impl ea mode: ' + mode);
@@ -638,65 +709,65 @@ exports.j68 = (function () {
         var disp;
         switch (mode) {
             case 0:
-                ea = 'c.d[' + r + ']';
-                return {
-                    'code': regop(ea),
-                    'pc': pc
-                };
+            ea = 'c.d[' + r + ']';
+            return {
+                'code': regop(ea),
+                'pc': pc
+            };
             case 1:
-                ea = 'c.a[' + r + ']';
-                return {
-                    'code': regop(ea),
-                    'pc': pc
-                };
+            ea = 'c.a[' + r + ']';
+            return {
+                'code': regop(ea),
+                'pc': pc
+            };
             case 2:
-                ea = 'c.a[' + r + ']';
-                return {
-                    'code': memop(ea),
-                    'pc': pc
-                };
+            ea = 'c.a[' + r + ']';
+            return {
+                'code': memop(ea),
+                'pc': pc
+            };
             case 3:
-                ea = 'c.a[' + r + ']';
-                return {
-                    'code': memop(ea) + ea + '+=' + ((size === 1 && r === 7) ? 2 : size) + ';',
-                    'pc': pc
-                };
+            ea = 'c.a[' + r + ']';
+            return {
+                'code': memop(ea) + ea + '+=' + ((size === 1 && r === 7) ? 2 : size) + ';',
+                'pc': pc
+            };
             case 4:
-                ea = 'c.a[' + r + ']';
-                return {
-                    'code': ea + '-=' + ((size === 1 && r === 7) ? 2 : size) + ';' + memop(ea),
-                    'pc': pc
-                };
+            ea = 'c.a[' + r + ']';
+            return {
+                'code': ea + '-=' + ((size === 1 && r === 7) ? 2 : size) + ';' + memop(ea),
+                'pc': pc
+            };
             case 5:
-                disp = this.context.fetch(pc);
-                ea = 'c.a[' + r + ']+' + this.extS16U32(disp);
+            disp = this.context.fetch(pc);
+            ea = 'c.a[' + r + ']+' + this.extS16U32(disp);
+            return {
+                'code': memop(ea),
+                'pc': pc + 2
+            };
+            case 6:
+            var indexedDstEa = this.indexedEaInfo(pc, 'c.a[' + r + ']');
+            return {
+                'code': memop(indexedDstEa.expr),
+                'pc': indexedDstEa.pc
+            };
+            case 7:
+            switch (r) {
+                case 0:
+                ea = this.extS16U32(this.context.fetch(pc));
                 return {
                     'code': memop(ea),
                     'pc': pc + 2
                 };
-            case 6:
-                var indexedDstEa = this.indexedEaInfo(pc, 'c.a[' + r + ']');
+                case 1:
+                ea = this.context.l32(pc) >>> 0;
                 return {
-                    'code': memop(indexedDstEa.expr),
-                    'pc': indexedDstEa.pc
+                    'code': memop(ea),
+                    'pc': pc + 4
                 };
-            case 7:
-                switch (r) {
-                    case 0:
-                        ea = this.extS16U32(this.context.fetch(pc));
-                        return {
-                            'code': memop(ea),
-                            'pc': pc + 2
-                        };
-                    case 1:
-                        ea = this.context.l32(pc) >>> 0;
-                        return {
-                            'code': memop(ea),
-                            'pc': pc + 4
-                        };
-                }
-                this.log('not impl dst ea mode 7 r: ' + r);
-                throw console.assert(false);
+            }
+            this.log('not impl dst ea mode 7 r: ' + r);
+            throw console.assert(false);
         }
         this.log('not impl dst ea mode: ' + mode);
         throw console.assert(false);
@@ -705,10 +776,13 @@ exports.j68 = (function () {
     j68.prototype.run = function () {
         var c = this.context;
         for (;;) {
-            if (c.halt) break;
+            if (c.halt) {
+                break;
+            }
             var pc = c.pc;
-            if (!c.c[pc])
+            if (!c.c[pc]) {
                 c.c[pc] = this.compile();
+            }
             c.c[pc](c);
         }
     };
@@ -729,8 +803,9 @@ exports.j68 = (function () {
             pc = code.pc;
             i++;
             if (code.quit) {
-                if (!code.in || !code.in.pc)
+                if (!code.in || !code.in.pc) {
                     asm.push({ 'code': ['c.pc=' + pc + ';' ] });
+                }
                 asm.push({ 'code': ['c.i+=' + i + ';' ] });
                 if (code.error) {
                     this.context.halt = true;
@@ -749,12 +824,14 @@ exports.j68 = (function () {
         for (i = 0; i < asmLength; ++i) {
             asm[i].pre = [];
             asm[i].post = [];
-            if (!asm[i].out)
+            if (!asm[i].out) {
                 continue;
+            }
             for (var type = 0; type < flags.length; ++type) {
                 var flag = flags[type];
-                if (!asm[i].out[flag])
+                if (!asm[i].out[flag]) {
                     continue;
+                }
                 for (var j = i + 1; j < asmLength; ++j) {
                     if (asm[j].in && (asm[j].in[flag] || (asm[j].in.sr && flag !== 'sr')))
                         break;
@@ -771,24 +848,34 @@ exports.j68 = (function () {
         
         // 2. Insert PC/SR update.
         for (i = asmLength - 1; i >= 0; --i) {
-            if (!asm[i].in)
+            if (!asm[i].in) {
                 continue;
+            }
             if (asm[i].in.pc) {
-                if (i > 0) asm[i - 1].post.push('c.pc=' + asm[i].pc + ';');
-                else asm[i].pre.push('c.pc=' + asm[i].pc + ';');
+                if (i > 0) {
+                    asm[i - 1].post.push('c.pc=' + asm[i].pc + ';');
+                } else {
+                    asm[i].pre.push('c.pc=' + asm[i].pc + ';');
+                }
             }
             if (asm[i].in.sr) {
-                if (i > 0) asm[i - 1].post.push('c.syncSr();');
-                else asm[i].pre.push('c.syncSr();');
+                if (i > 0) {
+                    asm[i - 1].post.push('c.syncSr();');
+                } else {
+                    asm[i].pre.push('c.syncSr();');
+                }
             }
         }
         for (i = 0; i < asmLength; ++i) {
-            if (asm[i].pre)
+            if (asm[i].pre) {
                 opt.push(asm[i].pre.join(''));
-            if (asm[i].code)
+            }
+            if (asm[i].code) {
                 opt.push(asm[i].code.join(''));
-            if (asm[i].post)
+            }
+            if (asm[i].post) {
                 opt.push(asm[i].post.join(''));
+            }
         }
         
         // 3. Final code generation.
@@ -796,46 +883,56 @@ exports.j68 = (function () {
         var func = new Function('c', optCode);
         if (this.logJit) {
             console.timeEnd('compile');
-            if (this.logOpt)
+            if (this.logOpt) {
                 this.log(JSON.stringify(asm));
+            }
             this.log(func);
-            if (optCode.indexOf(';;') >= 0)
+            if (optCode.indexOf(';;') >= 0) {
                 throw console.assert(false, 'unexpected code sequence: ' + optCode);
+            }
         }
         return func;
     };
     
     j68.prototype.decode = function (pc) {
         var inst = this.context.fetch(pc);
-        if (this.logDecode)
+        if (this.logDecode) {
             this.log('decode; $' + toHex(pc) + ': ' + toHex(inst, 4));
+        }
         var line = (inst >> 12) & 0xf;
         switch (line) {
-            case 0x0: return this.decode0(pc, inst);
-            case 0x1: return this.decode1(pc, inst);
-            case 0x3: return this.decode3(pc, inst);
-            case 0xA: return this.decodeA(pc, inst);
-            case 0xB: return this.decodeB(pc, inst);
-            case 0xC: return this.decodeC(pc, inst);
-            case 0xE: return this.decodeE(pc, inst);
+            case 0x0: 
+            return this.decode0(pc, inst);
+            case 0x1: 
+            return this.decode1(pc, inst);
+            case 0x3: 
+            return this.decode3(pc, inst);
+            case 0xA: 
+            return this.decodeA(pc, inst);
+            case 0xB: 
+            return this.decodeB(pc, inst);
+            case 0xC: 
+            return this.decodeC(pc, inst);
+            case 0xE: 
+            return this.decodeE(pc, inst);
             case 0x2:  // MOVEL, MOVEAL
-                return this.decode2(pc, inst);
+            return this.decode2(pc, inst);
             case 0x4:  // LEA
-                return this.decode4(pc, inst);
+            return this.decode4(pc, inst);
             case 0x5:  // ADDQ
-                return this.decode5(pc, inst);
+            return this.decode5(pc, inst);
             case 0x6:  // BRA / BSR / Bcc (TODO: Test)
-                return this.decode6(pc, inst);
+            return this.decode6(pc, inst);
             case 0x7:  // MOVEQ (TODO: unused bit check)
-                return this.decode7(pc, inst);
+            return this.decode7(pc, inst);
             case 0x8:  // ...
-                return this.decode8(pc, inst);
+            return this.decode8(pc, inst);
             case 0x9:  // SUB
-                return this.decode9(pc, inst);
+            return this.decode9(pc, inst);
             case 0xd:  // ADDX, ADDA, ADD
-                return this.decodeD(pc, inst);
+            return this.decodeD(pc, inst);
             case 0xf:  // F-line
-                return this.decodeF(pc, inst);
+            return this.decodeF(pc, inst);
         }
         // TODO: Implement other operations.
         throw console.assert(false);
@@ -845,11 +942,16 @@ exports.j68 = (function () {
         // MOVEL, MOVEAL
         var r = (inst >> 9) & 7;
         var mode = (inst >> 6) & 7;
-        var src = this.effectiveAddress(
-                pc, inst,
-                function (ea) { return 'var src=(' + ea + ')>>>0;'; },
-                function (ea) { return 'var src=c.l32(' + ea + ');'; },
-                4);
+        var size = 4; 
+        var src = this.effectiveAddress( // pc, inst, regop, memop, size
+            pc, inst,
+            function (regop) { 
+                return 'var src=(' + regop + ')>>>0;'; 
+            },
+            function (memop) { 
+                return 'var src=c.l32(' + memop + ');'; 
+            },
+            size);
 
         if (mode === 1) {
             return {
@@ -858,11 +960,15 @@ exports.j68 = (function () {
             };
         }
 
-        var dst = this.effectiveAddressDst(
-                src.pc, mode, r,
-                function (ea) { return ea + '=src>>>0;'; },
-                function (ea) { return 'c.s32(' + ea + ',src>>>0);'; },
-                4);
+        var dst = this.effectiveAddressDst( // pc, mode, r, regop, memop, size
+            src.pc, mode, r,
+            function (ea) { 
+                return ea + '=src>>>0;'; 
+            },
+            function (ea) { 
+                return 'c.s32(' + ea + ',src>>>0);'; 
+            },
+            size);
         return {
             'code': [ src.code, dst.code ],
             'out': this.flagMove('src'),
@@ -921,24 +1027,52 @@ exports.j68 = (function () {
         // 8=VC, 9=VS, 10=CC/HS, 11=CS/LO, 12=GE, 13=LT, 14=GT, 15=LE
         var condCode = '';
         switch (cond) {
-            case 2: condCode = '(!c.cc&&!c.cz)'; break;  // HI (higher) = !C && !Z
-            case 3: condCode = '(c.cc||c.cz)'; break;  // LS (lower or same) = C || Z
-            case 4: condCode = 'c.cn'; break;  // MI (minus)
-            case 5: condCode = '!c.cn'; break;  // PL (plus)
-            case 6: condCode = '!c.cz'; break;  // NE (not equal)
-            case 7: condCode = 'c.cz'; break;  // EQ (equal)
-            case 8: condCode = '!c.cv'; break;  // VC (overflow clear)
-            case 9: condCode = 'c.cv'; break;  // VS (overflow set)
-            case 10: condCode = '!c.cc'; break;  // CC/HS (carry clear/higher or same)
-            case 11: condCode = 'c.cc'; break;  // CS/LO (carry set/lower)
-            case 12: condCode = '(c.cn===c.cv)'; break;  // GE (greater or equal)
-            case 13: condCode = '(c.cn!==c.cv)'; break;  // LT (less than)
-            case 14: condCode = '(!c.cz&&(c.cn===c.cv))'; break;  // GT (greater than)
-            case 15: condCode = '(c.cz||(c.cn!==c.cv))'; break;  // LE (less or equal)
+            case 2: 
+            condCode = '(!c.cc&&!c.cz)'; 
+            break;  // HI (higher) = !C && !Z
+            case 3: 
+            condCode = '(c.cc||c.cz)'; 
+            break;  // LS (lower or same) = C || Z
+            case 4: 
+            condCode = 'c.cn'; 
+            break;  // MI (minus)
+            case 5: 
+            condCode = '!c.cn'; 
+            break;  // PL (plus)
+            case 6: 
+            condCode = '!c.cz'; 
+            break;  // NE (not equal)
+            case 7: 
+            condCode = 'c.cz'; 
+            break;  // EQ (equal)
+            case 8: 
+            condCode = '!c.cv'; 
+            break;  // VC (overflow clear)
+            case 9: 
+            condCode = 'c.cv'; 
+            break;  // VS (overflow set)
+            case 10: 
+            condCode = '!c.cc'; 
+            break;  // CC/HS (carry clear/higher or same)
+            case 11: 
+            condCode = 'c.cc'; 
+            break;  // CS/LO (carry set/lower)
+            case 12: 
+            condCode = '(c.cn===c.cv)'; 
+            break;  // GE (greater or equal)
+            case 13: 
+            condCode = '(c.cn!==c.cv)'; 
+            break;  // LT (less than)
+            case 14: 
+            condCode = '(!c.cz&&(c.cn===c.cv))'; 
+            break;  // GT (greater than)
+            case 15: 
+            condCode = '(c.cz||(c.cn!==c.cv))'; 
+            break;  // LE (less or equal)
         }
         
         return {
-            'code': ['if(' + condCode + '){c.pc=' + branchTarget + ';}else{c.pc=' + fallThrough + ';}'],
+            'code': ['if(' + condCode + ') {  c.pc=' + branchTarget + '; } else { c.pc=' + fallThrough + '; }'],
             'pc': branchTarget,
             'quit': true
         };
@@ -986,27 +1120,34 @@ exports.j68 = (function () {
             keepMask = '0xffff0000';
         }
         switch (opmode) {
-            case 0:  // SUB.b EA, Dn
-            case 1:  // SUB.w EA, Dn
-            case 2:  // SUB.l EA, Dn
-                ea = this.effectiveAddress(
-                        pc, inst,
-                        function (srcEa) {
-                            return 'var src=(' + srcEa + ')&' + sizeMask + ';' +
-                                   'var srcx=src;' +
-                                   'var dst=c.d[' + r + ']&' + sizeMask + ';' +
-                                   'var ext=src;' +
-                                   'var res=(dst-ext)&' + sizeMask + ';' +
-                                   (size === 4 ?
-                                        'c.d[' + r + ']=res>>>0;' :
-                                        'c.d[' + r + ']=(c.d[' + r + ']&' + keepMask + ')|res;');
-                        },
-                        function (srcEa) {
-                            if (size === 1) return 'var src=c.l8(' + srcEa + ');var srcx=src;var dst=c.d[' + r + ']&0xff;var ext=src;var res=(dst-ext)&0xff;c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|res;';
-                            if (size === 2) return 'var src=c.l16(' + srcEa + ');var srcx=src;var dst=c.d[' + r + ']&0xffff;var ext=src;var res=(dst-ext)&0xffff;c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|res;';
-                            return 'var src=c.l32(' + srcEa + ');var srcx=src;var dst=c.d[' + r + ']>>>0;var ext=src;var res=(dst-ext)>>>0;c.d[' + r + ']=res>>>0;';
-                        },
-                        size);
+            case 0:  
+                // SUB.b EA, Dn
+                case 1:  
+                // SUB.w EA, Dn
+                case 2:  
+                // SUB.l EA, Dn
+                ea = this.effectiveAddress( // pc, inst, regop, memop, size
+                    pc, inst,
+                    function (srcEa) {
+                        return 'var src=(' + srcEa + ')&' + sizeMask + ';' +
+                        'var srcx=src;' +
+                        'var dst=c.d[' + r + ']&' + sizeMask + ';' +
+                        'var ext=src;' +
+                        'var res=(dst-ext)&' + sizeMask + ';' +
+                        (size === 4 ?
+                            'c.d[' + r + ']=res>>>0;' :
+                            'c.d[' + r + ']=(c.d[' + r + ']&' + keepMask + ')|res;');
+                    },
+                    function (srcEa) {
+                        if (size === 1) {
+                            return 'var src=c.l8(' + srcEa + ');var srcx=src;var dst=c.d[' + r + ']&0xff;var ext=src;var res=(dst-ext)&0xff;c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|res;';
+                        }
+                        if (size === 2) {
+                            return 'var src=c.l16(' + srcEa + ');var srcx=src;var dst=c.d[' + r + ']&0xffff;var ext=src;var res=(dst-ext)&0xffff;c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|res;';
+                        }
+                        return 'var src=c.l32(' + srcEa + ');var srcx=src;var dst=c.d[' + r + ']>>>0;var ext=src;var res=(dst-ext)>>>0;c.d[' + r + ']=res>>>0;';
+                    },
+                    size);
                 return {
                     'code': [ ea.code ],
                     'out': {
@@ -1018,17 +1159,25 @@ exports.j68 = (function () {
                     },
                     'pc': ea.pc
                 };
-            case 3:  // SUBA.W
-                ea = this.effectiveAddress(
-                        pc, inst,
-                        function (srcEa) { return 'c.a[' + r + ']-=c.xw((' + srcEa + ')&0xffff);'; },
-                        function (srcEa) { return 'c.a[' + r + ']-=c.xw(c.l16(' + srcEa + ')&0xffff);'; },
-                        2);
+                case 3:  
+                // SUBA.W
+                ea = this.effectiveAddress( // pc, inst, regop, memop, size
+                    pc, inst,
+                    function (srcEa) { 
+                        return 'c.a[' + r + ']-=c.xw((' + srcEa + ')&0xffff);'; 
+                    },
+                    function (srcEa) { 
+                        return 'c.a[' + r + ']-=c.xw(c.l16(' + srcEa + ')&0xffff);'; 
+                    },
+                    2);
                 code.push(ea.code);
                 break;
-            case 4:  // SUBX.b / SUB.b Dn,EA
-            case 5:  // SUBX.w / SUB.w Dn,EA
-            case 6:  // SUBX.l / SUB.l Dn,EA
+                case 4:  
+                // SUBX.b / SUB.b Dn,EA
+                case 5:  
+                // SUBX.w / SUB.w Dn,EA
+                case 6:  
+                // SUBX.l / SUB.l Dn,EA
                 if ((inst & 0x0030) === 0x0000) {
                     var srcReg = inst & 7;
                     var isMem = (inst & 0x0008) !== 0;
@@ -1039,10 +1188,11 @@ exports.j68 = (function () {
                         code.push('var dst=c.d[' + r + ']&' + sizeMask + ';');
                         code.push('var ext=src+x;');
                         code.push('var res=(dst-ext)&' + sizeMask + ';');
-                        if (size === 4)
+                        if (size === 4) {
                             code.push('c.d[' + r + ']=res>>>0;');
-                        else
+                        } else {
                             code.push('c.d[' + r + ']=(c.d[' + r + ']&' + keepMask + ')|res;');
+                        }
                     } else {
                         var srcStep = (size === 1 && srcReg === 7) ? 2 : size;
                         var dstStep = (size === 1 && r === 7) ? 2 : size;
@@ -1062,12 +1212,13 @@ exports.j68 = (function () {
                         code.push('var srcx=(src+x)&' + sizeMask + ';');
                         code.push('var ext=src+x;');
                         code.push('var res=(dst-ext)&' + sizeMask + ';');
-                        if (size === 1)
+                        if (size === 1) {
                             code.push('c.s8(c.a[' + r + '],res);');
-                        else if (size === 2)
+                        } else if (size === 2) {
                             code.push('c.s16(c.a[' + r + '],res);');
-                        else
+                        } else {
                             code.push('c.s32(c.a[' + r + '],res>>>0);');
+                        }
                     }
                     return {
                         'code': code,
@@ -1081,19 +1232,24 @@ exports.j68 = (function () {
                         'pc': pc + 2
                     };
                 }
-                ea = this.effectiveAddressDst(
-                        pc + 2, (inst >> 3) & 7, inst & 7,
-                        function (dstEa) {
-                            if (size === 4)
-                                return 'var src=c.d[' + r + ']>>>0;var srcx=src;var dst=(' + dstEa + ')>>>0;var ext=src;var res=(dst-ext)>>>0;' + dstEa + '=res>>>0;';
-                            return 'var src=c.d[' + r + ']&' + sizeMask + ';var srcx=src;var dst=(' + dstEa + ')&' + sizeMask + ';var ext=src;var res=(dst-ext)&' + sizeMask + ';' + dstEa + '=((' + dstEa + ')&' + keepMask + ')|res;';
-                        },
-                        function (dstEa) {
-                            if (size === 1) return 'var src=c.d[' + r + ']&0xff;var srcx=src;var dst=c.l8(' + dstEa + ');var ext=src;var res=(dst-ext)&0xff;c.s8(' + dstEa + ',res);';
-                            if (size === 2) return 'var src=c.d[' + r + ']&0xffff;var srcx=src;var dst=c.l16(' + dstEa + ');var ext=src;var res=(dst-ext)&0xffff;c.s16(' + dstEa + ',res);';
-                            return 'var src=c.d[' + r + ']>>>0;var srcx=src;var dst=c.l32(' + dstEa + ');var ext=src;var res=(dst-ext)>>>0;c.s32(' + dstEa + ',res>>>0);';
-                        },
-                        size);
+                ea = this.effectiveAddressDst( // pc, mode, r, regop, memop, size
+                    pc + 2, (inst >> 3) & 7, inst & 7,
+                    function (dstEa) {
+                        if (size === 4) {
+                            return 'var src=c.d[' + r + ']>>>0;var srcx=src;var dst=(' + dstEa + ')>>>0;var ext=src;var res=(dst-ext)>>>0;' + dstEa + '=res>>>0;';
+                        }
+                        return 'var src=c.d[' + r + ']&' + sizeMask + ';var srcx=src;var dst=(' + dstEa + ')&' + sizeMask + ';var ext=src;var res=(dst-ext)&' + sizeMask + ';' + dstEa + '=((' + dstEa + ')&' + keepMask + ')|res;';
+                    },
+                    function (dstEa) {
+                        if (size === 1) {
+                            return 'var src=c.d[' + r + ']&0xff;var srcx=src;var dst=c.l8(' + dstEa + ');var ext=src;var res=(dst-ext)&0xff;c.s8(' + dstEa + ',res);';
+                        }
+                        if (size === 2) {
+                            return 'var src=c.d[' + r + ']&0xffff;var srcx=src;var dst=c.l16(' + dstEa + ');var ext=src;var res=(dst-ext)&0xffff;c.s16(' + dstEa + ',res);';
+                        }
+                        return 'var src=c.d[' + r + ']>>>0;var srcx=src;var dst=c.l32(' + dstEa + ');var ext=src;var res=(dst-ext)>>>0;c.s32(' + dstEa + ',res>>>0);';
+                    },
+                    size);
                 return {
                     'code': [ ea.code ],
                     'out': {
@@ -1106,26 +1262,30 @@ exports.j68 = (function () {
                     'pc': ea.pc
                 };
             case 7:  // SUBAL
-                ea = this.effectiveAddress(
-                        pc, inst, 
-                        function (ea) { return 'c.a[' + r + ']-=' + ea + ';'; },
-                        function (ea) { return 'c.a[' + r + ']-=c.l32(' + ea + ');'; },
-                        4);
+                ea = this.effectiveAddress( // pc, inst, regop, memop, size
+                    pc, inst, 
+                    function (ea) { 
+                        return 'c.a[' + r + ']-=' + ea + ';'; 
+                    },
+                    function (ea) { 
+                        return 'c.a[' + r + ']-=c.l32(' + ea + ');'; 
+                    },
+                    4);
                 code.push(ea.code);
                 break;
-            default:
+                default:
                 // TODO: Implement other opmode.
                 // SUB will need condition update.
                 this.log('sub not impl opmode: ' + opmode);
                 throw console.assert(false);
-        }
-        return {
-            'code': code,
-            'pc': ea.pc
+            }
+            return {
+                'code': code,
+                'pc': ea.pc
+            };
         };
-    };
-    
-    j68.prototype.decodeD = function (pc, inst) {
+        
+        j68.prototype.decodeD = function (pc, inst) {
         // ADDX, ADDA, ADD
         var r = (inst >> 9) & 7;
         var opmode = (inst >> 6) & 7;
@@ -1137,41 +1297,58 @@ exports.j68 = (function () {
         var size = 4;  // default long
         var sizeMask = '0xffffffff';
         var highBit = '0x80000000';
-        if (opmode === 0 || opmode === 4) { size = 1; sizeMask = '0xff'; highBit = '0x80'; keepMask = '0xffffff00'; }
-        else if (opmode === 1 || opmode === 5) { size = 2; sizeMask = '0xffff'; highBit = '0x8000'; keepMask = '0xffff0000'; }
+
+        if (opmode === 0 || opmode === 4) { 
+            size = 1; sizeMask = '0xff'; highBit = '0x80'; keepMask = '0xffffff00'; 
+        } else if (opmode === 1 || opmode === 5) { 
+            size = 2; sizeMask = '0xffff'; highBit = '0x8000'; keepMask = '0xffff0000'; 
+        }
         
         switch (opmode) {
             case 7:  // ADDA.L
-                ea = this.effectiveAddress(
-                        pc, inst,
-                        function (ea) { return 'c.a[' + r + ']+=' + ea + ';'; },
-                        function (ea) { return 'c.a[' + r + ']+=c.l32(' + ea + ');'; },
-                        4);
+                ea = this.effectiveAddress( // pc, inst, regop, memop, size
+                    pc, inst,
+                    function (ea) { 
+                        return 'c.a[' + r + ']+=' + ea + ';'; 
+                    },
+                    function (ea) { 
+                        return 'c.a[' + r + ']+=c.l32(' + ea + ');'; 
+                    },
+                    4);
                 code.push(ea.code);
                 return { 'code': code, 'pc': ea.pc };  // ADDA doesn't set flags
                 
             case 3:  // ADDA.W
-                ea = this.effectiveAddress(
-                        pc, inst,
-                        function (ea) { return 'c.a[' + r + ']+=c.xw(' + ea + '&0xffff);'; },
-                        function (ea) { return 'c.a[' + r + ']+=c.xw(c.l16(' + ea + ')&0xffff);'; },
-                        2);
+                ea = this.effectiveAddress( // pc, inst, regop, memop, size
+                    pc, inst,
+                    function (ea) { 
+                        return 'c.a[' + r + ']+=c.xw(' + ea + '&0xffff);'; 
+                    },
+                    function (ea) { 
+                        return 'c.a[' + r + ']+=c.xw(c.l16(' + ea + ')&0xffff);'; 
+                    },
+                    2);
                 code.push(ea.code);
                 return { 'code': code, 'pc': ea.pc };  // ADDA doesn't set flags
                 
             case 0:  // ADD.b EA, Dn
             case 1:  // ADD.w EA, Dn
             case 2:  // ADD.l EA, Dn
-                ea = this.effectiveAddress(
+                ea = this.effectiveAddress( // pc, inst, regop, memop, size
                     pc, inst,
                     function (ea) { 
-                        if (size === 4)
+                        if (size === 4) {
                             return 'var src=(' + ea + ')>>>0;var dst=c.d[' + r + ']>>>0;var res=(dst+src)>>>0;c.d[' + r + ']=res>>>0;';
+                        }
                         return 'var src=(' + ea + ')&' + sizeMask + ';var dst=c.d[' + r + ']&' + sizeMask + ';var res=(dst+src)&' + sizeMask + ';c.d[' + r + ']=(c.d[' + r + ']&' + keepMask + ')|res;';
                     },
                     function (ea) { 
-                        if (size === 1) return 'var src=c.l8(' + ea + ');var dst=c.d[' + r + ']&0xff;var res=(dst+src)&0xff;c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|res;';
-                        if (size === 2) return 'var src=c.l16(' + ea + ');var dst=c.d[' + r + ']&0xffff;var res=(dst+src)&0xffff;c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|res;';
+                        if (size === 1) {
+                            return 'var src=c.l8(' + ea + ');var dst=c.d[' + r + ']&0xff;var res=(dst+src)&0xff;c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|res;';
+                        }
+                        if (size === 2) {
+                            return 'var src=c.l16(' + ea + ');var dst=c.d[' + r + ']&0xffff;var res=(dst+src)&0xffff;c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|res;';
+                        }
                         return 'var src=c.l32(' + ea + ');var dst=c.d[' + r + ']>>>0;var res=(dst+src)>>>0;c.d[' + r + ']=res>>>0;';
                     },
                     size);
@@ -1185,9 +1362,12 @@ exports.j68 = (function () {
                     'pc': ea.pc 
                 };
                 
-            case 4:  // ADDX.b / ADD.b Dn,EA
-            case 5:  // ADDX.w / ADD.w Dn,EA
-            case 6:  // ADDX.l / ADD.l Dn,EA
+                case 4:  
+                // ADDX.b / ADD.b Dn,EA
+                case 5:  
+                // ADDX.w / ADD.w Dn,EA
+                case 6:  
+                // ADDX.l / ADD.l Dn,EA
                 if ((inst & 0x0030) === 0x0000) {
                     var srcReg = inst & 7;
                     var isMem = (inst & 0x0008) !== 0;
@@ -1198,10 +1378,11 @@ exports.j68 = (function () {
                         code.push('var dst=c.d[' + r + ']&' + sizeMask + ';');
                         code.push('var ext=src+x;');
                         code.push('var res=(dst+ext)&' + sizeMask + ';');
-                        if (size === 4)
+                        if (size === 4) {
                             code.push('c.d[' + r + ']=res>>>0;');
-                        else
+                        } else {
                             code.push('c.d[' + r + ']=(c.d[' + r + ']&' + keepMask + ')|res;');
+                        }
                     } else {
                         var srcStep = (size === 1 && srcReg === 7) ? 2 : size;
                         var dstStep = (size === 1 && r === 7) ? 2 : size;
@@ -1221,12 +1402,13 @@ exports.j68 = (function () {
                         code.push('var srcx=(src+x)&' + sizeMask + ';');
                         code.push('var ext=src+x;');
                         code.push('var res=(dst+ext)&' + sizeMask + ';');
-                        if (size === 1)
+                        if (size === 1) {
                             code.push('c.s8(c.a[' + r + '],res);');
-                        else if (size === 2)
+                        } else if (size === 2) {
                             code.push('c.s16(c.a[' + r + '],res);');
-                        else
+                        } else {
                             code.push('c.s32(c.a[' + r + '],res>>>0);');
+                        }
                     }
                     return {
                         'code': code,
@@ -1240,16 +1422,21 @@ exports.j68 = (function () {
                         'pc': pc + 2
                     };
                 }
-                ea = this.effectiveAddressDst(
+                ea = this.effectiveAddressDst( // pc, mode, r, regop, memop, size
                     pc + 2, (inst >> 3) & 7, inst & 7,
                     function (dstEa) {
-                        if (size === 4)
+                        if (size === 4) {
                             return 'var src=c.d[' + r + ']>>>0;var dst=(' + dstEa + ')>>>0;var res=(dst+src)>>>0;' + dstEa + '=res>>>0;';
+                        }
                         return 'var src=c.d[' + r + ']&' + sizeMask + ';var dst=(' + dstEa + ')&' + sizeMask + ';var res=(dst+src)&' + sizeMask + ';' + dstEa + '=((' + dstEa + ')&' + keepMask + ')|res;';
                     },
                     function (dstEa) {
-                        if (size === 1) return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst+src)&0xff;c.s8(' + dstEa + ',res);';
-                        if (size === 2) return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst+src)&0xffff;c.s16(' + dstEa + ',res);';
+                        if (size === 1) {
+                            return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst+src)&0xff;c.s8(' + dstEa + ',res);';
+                        }
+                        if (size === 2) {
+                            return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst+src)&0xffff;c.s16(' + dstEa + ',res);';
+                        }
                         return 'var src=c.d[' + r + ']>>>0;var dst=c.l32(' + dstEa + ');var res=(dst+src)>>>0;c.s32(' + dstEa + ',res>>>0);';
                     },
                     size);
@@ -1265,81 +1452,81 @@ exports.j68 = (function () {
                     'pc': ea.pc
                 };
                 
-            default:
+                default:
                 this.log('add not impl opmode: ' + opmode);
                 throw console.assert(false);
-        }
-    };
+            }
+        };
 
-    j68.prototype.bitFieldEa = function (pc, inst) {
-        var mode = (inst >> 3) & 7;
-        var r = inst & 7;
-        var disp;
-        switch (mode) {
-            case 0:
+        j68.prototype.bitFieldEa = function (pc, inst) {
+            var mode = (inst >> 3) & 7;
+            var r = inst & 7;
+            var disp;
+            switch (mode) {
+                case 0:
                 return {
                     'kind': 'reg',
                     'index': r,
                     'pc': pc
                 };
-            case 2:
+                case 2:
                 return {
                     'kind': 'mem',
                     'ea': '(c.a[' + r + ']>>>0)',
                     'pc': pc
                 };
-            case 5:
+                case 5:
                 disp = this.context.fetch(pc);
                 return {
                     'kind': 'mem',
                     'ea': '((c.a[' + r + ']+c.xw(' + disp + '))>>>0)',
                     'pc': pc + 2
                 };
-            case 6:
+                case 6:
                 var bitIndexedEa = this.indexedEaInfo(pc, 'c.a[' + r + ']');
                 return {
                     'kind': 'mem',
                     'ea': bitIndexedEa.expr,
                     'pc': bitIndexedEa.pc
                 };
-            case 7:
+                case 7:
                 switch (r) {
                     case 0:
-                        return {
-                            'kind': 'mem',
-                            'ea': this.extS16U32(this.context.fetch(pc)),
-                            'pc': pc + 2
-                        };
+                    return {
+                        'kind': 'mem',
+                        'ea': this.extS16U32(this.context.fetch(pc)),
+                        'pc': pc + 2
+                    };
                     case 1:
-                        return {
-                            'kind': 'mem',
-                            'ea': this.context.l32(pc) >>> 0,
-                            'pc': pc + 4
-                        };
+                    return {
+                        'kind': 'mem',
+                        'ea': this.context.l32(pc) >>> 0,
+                        'pc': pc + 4
+                    };
                     case 2:
-                        disp = this.context.fetch(pc);
-                        return {
-                            'kind': 'mem',
-                            'ea': '(' + (pc + 2) + '+c.xw(' + disp + '))>>>0',
-                            'pc': pc + 2
-                        };
+                    disp = this.context.fetch(pc);
+                    return {
+                        'kind': 'mem',
+                        'ea': '(' + (pc + 2) + '+c.xw(' + disp + '))>>>0',
+                        'pc': pc + 2
+                    };
                     case 3:
-                        var bitPcIndexedEa = this.indexedEaInfo(pc, '' + (pc + 2));
-                        return {
-                            'kind': 'mem',
-                            'ea': bitPcIndexedEa.expr,
-                            'pc': bitPcIndexedEa.pc
-                        };
+                    var bitPcIndexedEa = this.indexedEaInfo(pc, '' + (pc + 2));
+                    return {
+                        'kind': 'mem',
+                        'ea': bitPcIndexedEa.expr,
+                        'pc': bitPcIndexedEa.pc
+                    };
                 }
-        }
-        this.log('bitfield EA not impl mode: ' + mode + ' r: ' + r);
-        throw console.assert(false);
-    };
+            }
+            this.log('bitfield EA not impl mode: ' + mode + ' r: ' + r);
+            throw console.assert(false);
+        };
 
-    j68.prototype.decodeF = function (pc, inst) {
+        j68.prototype.decodeF = function (pc, inst) {
         // MC68040 MMU opcodes.
         if (inst === 0xf518 || (inst & 0xfff8) === 0xf508 ||
-                (inst & 0xfff8) === 0xf548 || (inst & 0xfff8) === 0xf568) {
+            (inst & 0xfff8) === 0xf548 || (inst & 0xfff8) === 0xf568) {
             if (this.type < j68.TYPE_MC68040) {
                 return {
                     'in': { 'pc': true, 'sr': true },
@@ -1350,7 +1537,7 @@ exports.j68 = (function () {
             }
             return {
                 'in': { 'pc': true, 'sr': true },
-                'code': [ 'if((c.sr&0x2000)===0){c.exception(8,' + pc + ');}' ],
+                'code': [ 'if((c.sr&0x2000)===0) {  c.exception(8,' + pc + '); }' ],
                 'pc': pc + 2,
                 'quit': true
             };
@@ -1360,39 +1547,43 @@ exports.j68 = (function () {
         var pmmuMode = (inst >> 3) & 7;
         var pmmuReg = inst & 7;
         if ((inst & 0xff00) === 0xf000 &&
-                (pmmuMode === 2 || pmmuMode === 3 || pmmuMode === 4 ||
-                 pmmuMode === 5 || pmmuMode === 6 ||
-                 (pmmuMode === 7 && pmmuReg <= 3))) {
+            (pmmuMode === 2 || pmmuMode === 3 || pmmuMode === 4 ||
+               pmmuMode === 5 || pmmuMode === 6 ||
+               (pmmuMode === 7 && pmmuReg <= 3))) {
             var ext = this.context.fetch(pc + 2);
 
-            if (this.type !== j68.TYPE_MC68030) {
-                return {
-                    'in': { 'pc': true, 'sr': true },
-                    'code': [ 'c.exception(4,' + pc + ');' ],
-                    'pc': pc + 4,
-                    'quit': true
-                };
-            }
+        if (this.type !== j68.TYPE_MC68030) {
+            return {
+                'in': { 'pc': true, 'sr': true },
+                'code': [ 'c.exception(4,' + pc + ');' ],
+                'pc': pc + 4,
+                'quit': true
+            };
+        }
 
-            if ((ext & 0xfc00) === 0x2000) {
-                return {
-                    'in': { 'pc': true, 'sr': true },
-                    'code': [ 'if((c.sr&0x2000)===0){c.exception(8,' + pc + ');}' ],
-                    'pc': pc + 4,
-                    'quit': true
-                };
-            }
+        if ((ext & 0xfc00) === 0x2000) {
+            return {
+                'in': { 'pc': true, 'sr': true },
+                'code': [ 'if((c.sr&0x2000)===0) { c.exception(8,' + pc + '); }' ],
+                'pc': pc + 4,
+                'quit': true
+            };
+        }
 
-            if (ext === 0x4000) {
-                var pmoveSrc = this.effectiveAddress(
+        if (ext === 0x4000) {
+                var pmoveSrc = this.effectiveAddress( // pc, inst, regop, memop, size
                     pc + 2, inst,
-                    function () { return 'throw console.assert(false);'; },
-                    function (ea) { return 'var pmoveTcValue=c.l32(' + ea + ')>>>0;'; },
+                    function () { 
+                        return 'throw console.assert(false);'; 
+                    },
+                    function (ea) { 
+                        return 'var pmoveTcValue=c.l32(' + ea + ')>>>0;'; 
+                    },
                     4
-                );
+                    );
                 return {
                     'in': { 'pc': true, 'sr': true },
-                    'code': [ 'if((c.sr&0x2000)===0){c.exception(8,' + pc + ');}else{' + pmoveSrc.code + 'c.tc=pmoveTcValue;}' ],
+                    'code': [ 'if((c.sr&0x2000)===0) { c.exception(8,' + pc + ');} else {' + pmoveSrc.code + 'c.tc=pmoveTcValue; }' ],
                     'pc': pmoveSrc.pc,
                     'quit': true
                 };
@@ -1401,15 +1592,19 @@ exports.j68 = (function () {
             if (ext === 0x4200) {
                 var mode = (inst >> 3) & 7;
                 var r = inst & 7;
-                var pmoveDst = this.effectiveAddressDst(
+                var pmoveDst = this.effectiveAddressDst( // pc, mode, r, regop, memop, size
                     pc + 4, mode, r,
-                    function () { return 'throw console.assert(false);'; },
-                    function (ea) { return 'c.s32(' + ea + ',c.tc>>>0);'; },
+                    function () { 
+                        return 'throw console.assert(false);'; 
+                    },
+                    function (ea) { 
+                        return 'c.s32(' + ea + ',c.tc>>>0);'; 
+                    },
                     4
-                );
+                    );
                 return {
                     'in': { 'pc': true, 'sr': true },
-                    'code': [ 'if((c.sr&0x2000)===0){c.exception(8,' + pc + ');}else{' + pmoveDst.code + '}' ],
+                    'code': [ 'if((c.sr&0x2000)===0) { c.exception(8,' + pc + ');} else {' + pmoveDst.code + '}' ],
                     'pc': pmoveDst.pc,
                     'quit': true
                 };
@@ -1432,9 +1627,9 @@ exports.j68 = (function () {
                 var move16DstReg = ((move16Ext >> 12) & 7);
                 return {
                     'code': [
-                        'c.move16(c.a[' + move16SrcReg + '],c.a[' + move16DstReg + ']);',
-                        'c.a[' + move16SrcReg + ']=(c.a[' + move16SrcReg + ']+16)>>>0;',
-                        'c.a[' + move16DstReg + ']=(c.a[' + move16DstReg + ']+16)>>>0;'
+                    'c.move16(c.a[' + move16SrcReg + '],c.a[' + move16DstReg + ']);',
+                    'c.a[' + move16SrcReg + ']=(c.a[' + move16SrcReg + ']+16)>>>0;',
+                    'c.a[' + move16DstReg + ']=(c.a[' + move16DstReg + ']+16)>>>0;'
                     ],
                     'pc': pc + 4
                 };
@@ -1446,23 +1641,23 @@ exports.j68 = (function () {
             var move16Code;
             switch (move16Opmode) {
                 case 0: // (Ay)+,(xxx).L
-                    move16Code = [
-                        'c.move16(c.a[' + move16Reg + '],' + move16Abs + ');',
-                        'c.a[' + move16Reg + ']=(c.a[' + move16Reg + ']+16)>>>0;'
-                    ];
-                    break;
+                move16Code = [
+                'c.move16(c.a[' + move16Reg + '],' + move16Abs + ');',
+                'c.a[' + move16Reg + ']=(c.a[' + move16Reg + ']+16)>>>0;'
+                ];
+                break;
                 case 1: // (xxx).L,(Ay)+
-                    move16Code = [
-                        'c.move16(' + move16Abs + ',c.a[' + move16Reg + ']);',
-                        'c.a[' + move16Reg + ']=(c.a[' + move16Reg + ']+16)>>>0;'
-                    ];
-                    break;
+                move16Code = [
+                'c.move16(' + move16Abs + ',c.a[' + move16Reg + ']);',
+                'c.a[' + move16Reg + ']=(c.a[' + move16Reg + ']+16)>>>0;'
+                ];
+                break;
                 case 2: // (Ay),(xxx).L
-                    move16Code = [ 'c.move16(c.a[' + move16Reg + '],' + move16Abs + ');' ];
-                    break;
+                move16Code = [ 'c.move16(c.a[' + move16Reg + '],' + move16Abs + ');' ];
+                break;
                 case 3: // (xxx).L,(Ay)
-                    move16Code = [ 'c.move16(' + move16Abs + ',c.a[' + move16Reg + ']);' ];
-                    break;
+                move16Code = [ 'c.move16(' + move16Abs + ',c.a[' + move16Reg + ']);' ];
+                break;
             }
             return {
                 'code': move16Code,
@@ -1491,7 +1686,7 @@ exports.j68 = (function () {
             }
             return {
                 'in': { 'pc': true, 'sr': true },
-                'code': [ 'if((c.sr&0x2000)===0){c.exception(8,' + pc + ');}' ],
+                'code': [ 'if((c.sr&0x2000)===0) { c.exception(8,' + pc + '); }' ],
                 'pc': pc + 2,
                 'quit': true
             };
@@ -1559,204 +1754,225 @@ exports.j68 = (function () {
             var data = this.context.fetch(pc + 2);
             return { 'code': ['c.setCcr(c.sr^' + (data&0xff) + ');'], 'pc': pc + 4 };
         }
-	        if (inst === 0x0a7c) {  // EORI to SR
-	            var data = this.context.fetch(pc + 2);
-	            return { 'in': { 'sr': true }, 'code': ['c.setSr((c.sr&0xffff)^' + data + ');'], 'pc': pc + 4 };
-	        }
+        if (inst === 0x0a7c) {  // EORI to SR
+           var data = this.context.fetch(pc + 2);
+           return { 'in': { 'sr': true }, 'code': ['c.setSr((c.sr&0xffff)^' + data + ');'], 'pc': pc + 4 };
+       }
 
-	        // CAS (00001ss011mmmrrr with extension word)
-	        if ((inst & 0x09c0) === 0x08c0) {
-	            var casSizeBits = (inst >> 9) & 3;
-	            var casMode = (inst >> 3) & 7;
-	            var casEaReg = inst & 7;
-	            if (casSizeBits >= 1 &&
-	                (casMode === 2 || casMode === 3 || casMode === 4 ||
-	                 casMode === 5 || casMode === 6 ||
-	                 (casMode === 7 && casEaReg <= 1))) {
-	                var casExt = this.context.fetch(pc + 2);
-	                var casCmpReg = casExt & 7;
-	                var casUpdReg = (casExt >> 6) & 7;
-	                var casSize = casSizeBits === 1 ? 1 : casSizeBits === 2 ? 2 : 4;
-	                var casSizeMask = casSize === 1 ? '0xff' : casSize === 2 ? '0xffff' : '0xffffffff';
-	                var casHighBit = casSize === 1 ? '0x80' : casSize === 2 ? '0x8000' : '0x80000000';
-	                var casKeepMask = casSize === 1 ? '0xffffff00' : '0xffff0000';
-	                var casEa = this.effectiveAddress(
-	                    pc + 2, inst,
-	                    function () { return 'throw console.assert(false);'; },
-	                    function (ea) {
-	                        if (casSize === 1) {
-	                            return 'var dst=c.l8(' + ea + ');var src=c.d[' + casCmpReg + ']&0xff;var res=(dst-src)&0xff;' +
-	                                'if(res===0){c.s8(' + ea + ',c.d[' + casUpdReg + ']&0xff);}else{c.d[' + casCmpReg + ']=(c.d[' + casCmpReg + ']&' + casKeepMask + ')|dst;}';
-	                        }
-	                        if (casSize === 2) {
-	                            return 'var dst=c.l16(' + ea + ');var src=c.d[' + casCmpReg + ']&0xffff;var res=(dst-src)&0xffff;' +
-	                                'if(res===0){c.s16(' + ea + ',c.d[' + casUpdReg + ']&0xffff);}else{c.d[' + casCmpReg + ']=(c.d[' + casCmpReg + ']&' + casKeepMask + ')|dst;}';
-	                        }
-	                        return 'var dst=c.l32(' + ea + ')>>>0;var src=c.d[' + casCmpReg + ']>>>0;var res=(dst-src)>>>0;' +
-	                            'if(res===0){c.s32(' + ea + ',c.d[' + casUpdReg + ']>>>0);}else{c.d[' + casCmpReg + ']=dst>>>0;}';
-	                    },
-	                    casSize
-	                );
-	                return {
-	                    'code': [casEa.code],
-	                    'out': this.flagSub('dst', 'src', 'res', casHighBit, casSizeMask),
-	                    'pc': casEa.pc
-	                };
-	            }
-	        }
+	    // CAS (00001ss011mmmrrr with extension word)
+	    if ((inst & 0x09c0) === 0x08c0) {
+           var casSizeBits = (inst >> 9) & 3;
+           var casMode = (inst >> 3) & 7;
+           var casEaReg = inst & 7;
+           if (casSizeBits >= 1 &&
+               (casMode === 2 || casMode === 3 || casMode === 4 ||
+                  casMode === 5 || casMode === 6 ||
+                  (casMode === 7 && casEaReg <= 1))) {
+               var casExt = this.context.fetch(pc + 2);
+           var casCmpReg = casExt & 7;
+           var casUpdReg = (casExt >> 6) & 7;
+           var casSize = casSizeBits === 1 ? 1 : casSizeBits === 2 ? 2 : 4;
+           var casSizeMask = casSize === 1 ? '0xff' : casSize === 2 ? '0xffff' : '0xffffffff';
+           var casHighBit = casSize === 1 ? '0x80' : casSize === 2 ? '0x8000' : '0x80000000';
+           var casKeepMask = casSize === 1 ? '0xffffff00' : '0xffff0000';
+	            var casEa = this.effectiveAddress( // pc, inst, regop, memop, size
+                   pc + 2, inst,
+                   function () { 
+                    return 'throw console.assert(false);'; 
+                },
+                function (ea) {
+                   if (casSize === 1) {
+                       return 'var dst=c.l8(' + ea + ');var src=c.d[' + casCmpReg + ']&0xff;var res=(dst-src)&0xff;' +
+                       'if(res===0) { c.s8(' + ea + ',c.d[' + casUpdReg + ']&0xff);} else {c.d[' + casCmpReg + ']=(c.d[' + casCmpReg + ']&' + casKeepMask + ')|dst; }';
+                   }
+                   if (casSize === 2) {
+                    return 'var dst=c.l16(' + ea + ');var src=c.d[' + casCmpReg + ']&0xffff;var res=(dst-src)&0xffff;' +
+                    'if(res===0) { c.s16(' + ea + ',c.d[' + casUpdReg + ']&0xffff);} else {c.d[' + casCmpReg + ']=(c.d[' + casCmpReg + ']&' + casKeepMask + ')|dst; }';
+                }
+                return 'var dst=c.l32(' + ea + ')>>>0;var src=c.d[' + casCmpReg + ']>>>0;var res=(dst-src)>>>0;' +
+                'if(res===0) { c.s32(' + ea + ',c.d[' + casUpdReg + ']>>>0);} else {c.d[' + casCmpReg + ']=dst>>>0; }';
+            },
+            casSize
+            );
+	            return {
+                   'code': [casEa.code],
+                   'out': this.flagSub('dst', 'src', 'res', casHighBit, casSizeMask),
+                   'pc': casEa.pc
+               };
+           }
+       }
 
-	        // MOVES (00001110dr000mmmrrr with extension word)
-	        if ((inst & 0x0f38) === 0x0e10) {
-	            var movesSizeBits = (inst >> 6) & 3;
-	            var movesMode = (inst >> 3) & 7;
-	            var movesEaReg = inst & 7;
-	            if (movesSizeBits !== 3 &&
-	                (movesMode === 2 || movesMode === 3 || movesMode === 4 ||
-	                 movesMode === 5 || movesMode === 6 ||
-	                 (movesMode === 7 && movesEaReg <= 1))) {
-	                var movesExt = this.context.fetch(pc + 2);
-	                var movesRegIsAddress = (movesExt & 0x8000) !== 0;
-	                var movesReg = (movesExt >> 12) & 7;
-	                var movesRegRef = (movesRegIsAddress ? 'c.a[' : 'c.d[') + movesReg + ']';
-	                var movesRegToEa = (movesExt & 0x0800) !== 0;
-	                var movesSize = movesSizeBits === 0 ? 1 : movesSizeBits === 1 ? 2 : 4;
-	                var movesEa = this.effectiveAddress(
-	                    pc + 2, inst,
-	                    function () { return 'throw console.assert(false);'; },
-	                    function (ea) {
-	                        if (movesRegToEa) {
-	                            if (movesSize === 1) return 'c.s8(' + ea + ',' + movesRegRef + '&0xff);';
-	                            if (movesSize === 2) return 'c.s16(' + ea + ',' + movesRegRef + '&0xffff);';
-	                            return 'c.s32(' + ea + ',' + movesRegRef + '>>>0);';
-	                        }
-	                        if (movesSize === 1) {
-	                            if (movesRegIsAddress) return movesRegRef + '=(c.l8(' + ea + ')<<24)>>24;';
-	                            return movesRegRef + '=(' + movesRegRef + '&0xffffff00)|c.l8(' + ea + ');';
-	                        }
-	                        if (movesSize === 2) {
-	                            if (movesRegIsAddress) return movesRegRef + '=c.xw(c.l16(' + ea + '));';
-	                            return movesRegRef + '=(' + movesRegRef + '&0xffff0000)|c.l16(' + ea + ');';
-	                        }
-	                        return movesRegRef + '=c.l32(' + ea + ')>>>0;';
-	                    },
-	                    movesSize
-	                );
-	                return {
-	                    'in': { 'pc': true, 'sr': true },
-	                    'code': [
-                        'if((c.sr&0x2000)===0){c.exception(8,' + pc + ');}else{' + movesEa.code + '}'
-	                    ],
-	                    'pc': movesEa.pc,
-	                    'quit': true
-	                };
-	            }
-	        }
+        // MOVES (00001110dr000mmmrrr with extension word)
+        if ((inst & 0x0f38) === 0x0e10) {
+            var movesSizeBits = (inst >> 6) & 3;
+            var movesMode = (inst >> 3) & 7;
+            var movesEaReg = inst & 7;
+            if (movesSizeBits !== 3 &&
+                (movesMode === 2 || movesMode === 3 || movesMode === 4 ||
+                   movesMode === 5 || movesMode === 6 ||
+                   (movesMode === 7 && movesEaReg <= 1))) {
+                var movesExt = this.context.fetch(pc + 2);
+            var movesRegIsAddress = (movesExt & 0x8000) !== 0;
+            var movesReg = (movesExt >> 12) & 7;
+            var movesRegRef = (movesRegIsAddress ? 'c.a[' : 'c.d[') + movesReg + ']';
+            var movesRegToEa = (movesExt & 0x0800) !== 0;
+            var movesSize = movesSizeBits === 0 ? 1 : movesSizeBits === 1 ? 2 : 4;
+                var movesEa = this.effectiveAddress( // pc, inst, regop, memop, size
+                    pc + 2, inst,
+                    function () { 
+                        return 'throw console.assert(false);'; 
+                    },
+                    function (ea) {
+                        if (movesRegToEa) {
+                            if (movesSize === 1) {
+                                return 'c.s8(' + ea + ',' + movesRegRef + '&0xff);';
+                            }
+                            if (movesSize === 2) {
+                                return 'c.s16(' + ea + ',' + movesRegRef + '&0xffff);';
+                            }
+                            return 'c.s32(' + ea + ',' + movesRegRef + '>>>0);';
+                        }
+                        if (movesSize === 1) {
+                            if (movesRegIsAddress) {
+                                return movesRegRef + '=(c.l8(' + ea + ')<<24)>>24;';
+                            }
+                            return movesRegRef + '=(' + movesRegRef + '&0xffffff00)|c.l8(' + ea + ');';
+                        }
+                        if (movesSize === 2) {
+                            if (movesRegIsAddress) {
+                                return movesRegRef + '=c.xw(c.l16(' + ea + '));';
+                            }
+                            return movesRegRef + '=(' + movesRegRef + '&0xffff0000)|c.l16(' + ea + ');';
+                        }
+                        return movesRegRef + '=c.l32(' + ea + ')>>>0;';
+                    },
+                    movesSize
+                    );
+                return {
+                    'in': { 'pc': true, 'sr': true },
+                    'code': [
+                    'if((c.sr&0x2000)===0) { c.exception(8,' + pc + ');} else {' + movesEa.code + '}'
+                    ],
+                    'pc': movesEa.pc,
+                    'quit': true
+                };
+            }
+        }
 
-	        // CMPI (00001100ssmmmrrr)
-	        if ((inst & 0xff00) === 0x0c00) {
+        // CMPI (00001100ssmmmrrr)
+        if ((inst & 0xff00) === 0x0c00) {
             var sizeBits = (inst >> 6) & 3;
-            if (sizeBits === 3)
+            if (sizeBits === 3) {
                 throw console.assert(false);
+            }
             var size = sizeBits === 0 ? 1 : sizeBits === 1 ? 2 : 4;
             var sizeMask = size === 1 ? '0xff' : size === 2 ? '0xffff' : '0xffffffff';
             var highBit = size === 1 ? '0x80' : size === 2 ? '0x8000' : '0x80000000';
             var imm = size === 4 ? this.context.l32(pc + 2) : this.context.fetch(pc + 2);
             var eaBase = pc + (size === 4 ? 4 : 2);
-            var cmpiEa = this.effectiveAddress(
-                eaBase, inst,
-                function (ea) { return 'var src=' + imm + '&' + sizeMask + ';var dst=(' + ea + ')&' + sizeMask + ';var res=(dst-src)&' + sizeMask + ';'; },
-                function (ea) {
-                    if (size === 1) return 'var src=' + (imm & 0xff) + ';var dst=c.l8(' + ea + ');var res=(dst-src)&0xff;';
-                    if (size === 2) return 'var src=' + (imm & 0xffff) + ';var dst=c.l16(' + ea + ');var res=(dst-src)&0xffff;';
-                    return 'var src=' + (imm >>> 0) + ';var dst=c.l32(' + ea + ');var res=(dst-src)>>>0;';
-                },
-                size
+        var cmpiEa = this.effectiveAddress( // pc, inst, regop, memop, size
+            eaBase, inst,
+            function (ea) { 
+                return 'var src=' + imm + '&' + sizeMask + ';var dst=(' + ea + ')&' + sizeMask + ';var res=(dst-src)&' + sizeMask + ';'; 
+            },
+            function (ea) {
+                if (size === 1) {
+                    return 'var src=' + (imm & 0xff) + ';var dst=c.l8(' + ea + ');var res=(dst-src)&0xff;';
+                }
+                if (size === 2) {
+                    return 'var src=' + (imm & 0xffff) + ';var dst=c.l16(' + ea + ');var res=(dst-src)&0xffff;';
+                }
+                return 'var src=' + (imm >>> 0) + ';var dst=c.l32(' + ea + ');var res=(dst-src)>>>0;';
+            },
+            size
             );
-            return {
-                'code': [cmpiEa.code],
-                'out': this.flagSub('dst', 'src', 'res', highBit, sizeMask),
-                'pc': cmpiEa.pc
-	            };
-	        }
+        return {
+            'code': [cmpiEa.code],
+            'out': this.flagSub('dst', 'src', 'res', highBit, sizeMask),
+            'pc': cmpiEa.pc
+        };
+    }
 
-	        // CHK2/CMP2 (00000ss011mmmrrr with extension word)
-	        if ((inst & 0xf1c0) === 0x00c0) {
-	            var chk2SizeBits = (inst >> 9) & 3;
-	            var chk2Mode = (inst >> 3) & 7;
-	            var chk2EaReg = inst & 7;
-	            if (chk2SizeBits !== 3 &&
-	                (chk2Mode === 2 || chk2Mode === 5 || chk2Mode === 6 ||
-	                 (chk2Mode === 7 && chk2EaReg <= 3))) {
-	                var chk2Ext = this.context.fetch(pc + 2);
-	                var chk2IsAddress = (chk2Ext & 0x8000) !== 0;
-	                var chk2Reg = (chk2Ext >> 12) & 7;
-	                var chk2IsTrap = (chk2Ext & 0x0800) !== 0;
-	                var chk2Size = chk2SizeBits === 0 ? 1 : chk2SizeBits === 1 ? 2 : 4;
-	                var chk2LoadBounds;
-	                if (chk2Size === 1) {
-	                    chk2LoadBounds = function (ea) {
-	                        return 'var lower=(c.l8(' + ea + ')<<24)>>24;var upper=(c.l8((' + ea + '+1)>>>0)<<24)>>24;';
-	                    };
-	                } else if (chk2Size === 2) {
-	                    chk2LoadBounds = function (ea) {
-	                        return 'var lower=c.xw(c.l16(' + ea + '));var upper=c.xw(c.l16((' + ea + '+2)>>>0));';
-	                    };
-	                } else {
-	                    chk2LoadBounds = function (ea) {
-	                        return 'var lower=c.l32(' + ea + ')|0;var upper=c.l32((' + ea + '+4)>>>0)|0;';
-	                    };
-	                }
-	                var chk2Ea = this.effectiveAddress(
-	                    pc + 2, inst,
-	                    function () { return 'throw console.assert(false);'; },
-	                    chk2LoadBounds,
-	                    chk2Size
-	                );
-	                var chk2RegExpr;
-	                if (chk2IsAddress) {
-	                    chk2RegExpr = 'c.a[' + chk2Reg + ']|0';
-	                } else if (chk2Size === 1) {
-	                    chk2RegExpr = '((c.d[' + chk2Reg + ']&0xff)<<24)>>24';
-	                } else if (chk2Size === 2) {
-	                    chk2RegExpr = 'c.xw(c.d[' + chk2Reg + ']&0xffff)';
-	                } else {
-	                    chk2RegExpr = 'c.d[' + chk2Reg + ']|0';
-	                }
-	                var chk2Code = [];
-	                chk2Code.push(chk2Ea.code);
-	                chk2Code.push('var reg=' + chk2RegExpr + ';');
-	                chk2Code.push('var outOfBounds=false;');
-	                chk2Code.push('c.cz=((reg===lower)||(reg===upper));');
-	                chk2Code.push('if(!c.cz){');
-	                chk2Code.push('if(lower<=upper){outOfBounds=(reg<lower||reg>upper);}');
-	                chk2Code.push('else{outOfBounds=(reg>upper&&reg<lower);}');
-	                chk2Code.push('}');
-	                chk2Code.push('c.cc=outOfBounds;');
-	                if (chk2IsTrap) {
-	                    chk2Code.push('if(outOfBounds){c.exception(6,' + pc + ');}');
-	                    return {
-	                        'in': { 'pc': true, 'sr': true },
-	                        'code': chk2Code,
-	                        'pc': chk2Ea.pc,
-	                        'quit': true
-	                    };
-	                }
-	                return {
-	                    'code': chk2Code,
-	                    'pc': chk2Ea.pc
-	                };
-	            }
-	        }
+        // CHK2/CMP2 (00000ss011mmmrrr with extension word)
+        if ((inst & 0xf1c0) === 0x00c0) {
+         var chk2SizeBits = (inst >> 9) & 3;
+         var chk2Mode = (inst >> 3) & 7;
+         var chk2EaReg = inst & 7;
+         if (chk2SizeBits !== 3 &&
+             (chk2Mode === 2 || chk2Mode === 5 || chk2Mode === 6 ||
+              (chk2Mode === 7 && chk2EaReg <= 3))) {
+             var chk2Ext = this.context.fetch(pc + 2);
+         var chk2IsAddress = (chk2Ext & 0x8000) !== 0;
+         var chk2Reg = (chk2Ext >> 12) & 7;
+         var chk2IsTrap = (chk2Ext & 0x0800) !== 0;
+         var chk2Size = chk2SizeBits === 0 ? 1 : chk2SizeBits === 1 ? 2 : 4;
+         var chk2LoadBounds;
+         if (chk2Size === 1) {
+             chk2LoadBounds = function (ea) {
+                 return 'var lower=(c.l8(' + ea + ')<<24)>>24;var upper=(c.l8((' + ea + '+1)>>>0)<<24)>>24;';
+             };
+         } else if (chk2Size === 2) {
+             chk2LoadBounds = function (ea) {
+                 return 'var lower=c.xw(c.l16(' + ea + '));var upper=c.xw(c.l16((' + ea + '+2)>>>0));';
+             };
+         } else {
+             chk2LoadBounds = function (ea) {
+                 return 'var lower=c.l32(' + ea + ')|0;var upper=c.l32((' + ea + '+4)>>>0)|0;';
+             };
+         }
+	       var chk2Ea = this.effectiveAddress( // pc, inst, regop, memop, size
+           pc + 2, inst,
+           function () { 
+            return 'throw console.assert(false);'; 
+        },
+        chk2LoadBounds,
+        chk2Size
+        );
+          var chk2RegExpr;
+          if (chk2IsAddress) {
+           chk2RegExpr = 'c.a[' + chk2Reg + ']|0';
+       } else if (chk2Size === 1) {
+           chk2RegExpr = '((c.d[' + chk2Reg + ']&0xff)<<24)>>24';
+       } else if (chk2Size === 2) {
+           chk2RegExpr = 'c.xw(c.d[' + chk2Reg + ']&0xffff)';
+       } else {
+           chk2RegExpr = 'c.d[' + chk2Reg + ']|0';
+       }
+       var chk2Code = [];
+       chk2Code.push(chk2Ea.code);
+       chk2Code.push('var reg=' + chk2RegExpr + ';');
+       chk2Code.push('var outOfBounds=false;');
+       chk2Code.push('c.cz=((reg===lower)||(reg===upper));');
+       chk2Code.push('if(!c.cz) { ');
+       chk2Code.push('if(lower<=upper) { outOfBounds=(reg<lower||reg>upper); }');
+       chk2Code.push('else{outOfBounds=(reg>upper&&reg<lower); }');
+       chk2Code.push('}');
+       chk2Code.push('c.cc=outOfBounds;');
+       if (chk2IsTrap) {
+           chk2Code.push('if(outOfBounds) { c.exception(6,' + pc + '); }');
+           return {
+               'in': { 'pc': true, 'sr': true },
+               'code': chk2Code,
+               'pc': chk2Ea.pc,
+               'quit': true
+           };
+       }
+       return {
+           'code': chk2Code,
+           'pc': chk2Ea.pc
+       };
+   }
+}
 
 	        // 68020 CALLM/RTM occupy line 0 opcode space and must not fall
 	        // through into the OR/ORI matcher used for 68000 instructions.
-        if ((inst & 0xfff8) === 0x06c0 ||
-            (inst & 0xfff8) === 0x06c8 ||
-            (inst & 0xfff8) === 0x06d0 ||
-            (inst & 0xfff8) === 0x06e8 ||
-            (inst & 0xfff8) === 0x06f0 ||
-            (inst & 0xfffc) === 0x06f8) {
-            this.log('not impl: line=0 CALLM/RTM inst=' + inst.toString(16));
+            if ((inst & 0xfff8) === 0x06c0 ||
+                (inst & 0xfff8) === 0x06c8 ||
+                (inst & 0xfff8) === 0x06d0 ||
+                (inst & 0xfff8) === 0x06e8 ||
+                (inst & 0xfff8) === 0x06f0 ||
+                (inst & 0xfffc) === 0x06f8) {
+                this.log('not impl: line=0 CALLM/RTM inst=' + inst.toString(16));
             throw console.assert(false);
         }
 
@@ -1769,8 +1985,8 @@ exports.j68 = (function () {
             if (movepOpmode === 4) {  // MOVEP.W (d16,Ay),Dx
                 return {
                     'code': [
-                        'var ea=' + baseEa + ';',
-                        'c.d[' + r + ']=((c.l8(ea)<<8)|c.l8(ea+2))>>>0;'
+                    'var ea=' + baseEa + ';',
+                    'c.d[' + r + ']=((c.l8(ea)<<8)|c.l8(ea+2))>>>0;'
                     ],
                     'out': this.flagMove('c.d[' + r + ']'),
                     'pc': pc + 4
@@ -1779,8 +1995,8 @@ exports.j68 = (function () {
             if (movepOpmode === 5) {  // MOVEP.L (d16,Ay),Dx
                 return {
                     'code': [
-                        'var ea=' + baseEa + ';',
-                        'c.d[' + r + ']=((c.l8(ea)<<24)|(c.l8(ea+2)<<16)|(c.l8(ea+4)<<8)|c.l8(ea+6))>>>0;'
+                    'var ea=' + baseEa + ';',
+                    'c.d[' + r + ']=((c.l8(ea)<<24)|(c.l8(ea+2)<<16)|(c.l8(ea+4)<<8)|c.l8(ea+6))>>>0;'
                     ],
                     'out': this.flagMove('c.d[' + r + ']'),
                     'pc': pc + 4
@@ -1789,10 +2005,10 @@ exports.j68 = (function () {
             if (movepOpmode === 6) {  // MOVEP.W Dx,(d16,Ay)
                 return {
                     'code': [
-                        'var ea=' + baseEa + ';',
-                        'var src=c.d[' + r + ']&0xffff;',
-                        'c.s8(ea,(src>>8)&0xff);',
-                        'c.s8(ea+2,src&0xff);'
+                    'var ea=' + baseEa + ';',
+                    'var src=c.d[' + r + ']&0xffff;',
+                    'c.s8(ea,(src>>8)&0xff);',
+                    'c.s8(ea+2,src&0xff);'
                     ],
                     'pc': pc + 4
                 };
@@ -1800,12 +2016,12 @@ exports.j68 = (function () {
             if (movepOpmode === 7) {  // MOVEP.L Dx,(d16,Ay)
                 return {
                     'code': [
-                        'var ea=' + baseEa + ';',
-                        'var src=c.d[' + r + ']>>>0;',
-                        'c.s8(ea,(src>>>24)&0xff);',
-                        'c.s8(ea+2,(src>>>16)&0xff);',
-                        'c.s8(ea+4,(src>>>8)&0xff);',
-                        'c.s8(ea+6,src&0xff);'
+                    'var ea=' + baseEa + ';',
+                    'var src=c.d[' + r + ']>>>0;',
+                    'c.s8(ea,(src>>>24)&0xff);',
+                    'c.s8(ea+2,(src>>>16)&0xff);',
+                    'c.s8(ea+4,(src>>>8)&0xff);',
+                    'c.s8(ea+6,src&0xff);'
                     ],
                     'pc': pc + 4
                 };
@@ -1827,10 +2043,18 @@ exports.j68 = (function () {
                 regCode.push('var mask=(1<<bit);');
                 regCode.push('var dst=c.d[' + dstImm + ']>>>0;');
                 regCode.push('var wasZero=((dst&mask)===0);');
-                if (bitOpImm === 1) regCode.push('dst=(dst^mask)>>>0;');
-                if (bitOpImm === 2) regCode.push('dst=(dst&(~mask))>>>0;');
-                if (bitOpImm === 3) regCode.push('dst=(dst|mask)>>>0;');
-                if (bitOpImm !== 0) regCode.push('c.d[' + dstImm + ']=dst;');
+                if (bitOpImm === 1) {
+                    regCode.push('dst=(dst^mask)>>>0;');
+                }
+                if (bitOpImm === 2) {
+                    regCode.push('dst=(dst&(~mask))>>>0;');
+                }
+                if (bitOpImm === 3) {
+                    regCode.push('dst=(dst|mask)>>>0;');
+                }
+                if (bitOpImm !== 0) {
+                    regCode.push('c.d[' + dstImm + ']=dst;');
+                }
                 return {
                     'code': regCode,
                     'out': { 'z': 'wasZero' },
@@ -1839,23 +2063,33 @@ exports.j68 = (function () {
             }
 
             // Memory destination: bit number modulo 8.
-            var eaImm = this.effectiveAddress(
+            var eaImm = this.effectiveAddress( // pc, inst, regop, memop, size
                 pc + 2, inst,
-                function () { return 'throw console.assert(false);'; },
+                function () { 
+                    return 'throw console.assert(false);'; 
+                },
                 function (ea) {
                     var memCode = [];
                     memCode.push('var bit=' + bitNumImm + '&7;');
                     memCode.push('var mask=(1<<bit);');
                     memCode.push('var dst=c.l8(' + ea + ');');
                     memCode.push('var wasZero=((dst&mask)===0);');
-                    if (bitOpImm === 1) memCode.push('dst=(dst^mask)&0xff;');
-                    if (bitOpImm === 2) memCode.push('dst=(dst&(~mask))&0xff;');
-                    if (bitOpImm === 3) memCode.push('dst=(dst|mask)&0xff;');
-                    if (bitOpImm !== 0) memCode.push('c.s8(' + ea + ',dst);');
+                    if (bitOpImm === 1) {
+                        memCode.push('dst=(dst^mask)&0xff;');
+                    }
+                    if (bitOpImm === 2) {
+                        memCode.push('dst=(dst&(~mask))&0xff;');
+                    }
+                    if (bitOpImm === 3) {
+                        memCode.push('dst=(dst|mask)&0xff;');
+                    }
+                    if (bitOpImm !== 0) {
+                        memCode.push('c.s8(' + ea + ',dst);');
+                    }
                     return memCode.join('');
                 },
                 1
-            );
+                );
             return {
                 'code': [eaImm.code],
                 'out': { 'z': 'wasZero' },
@@ -1876,10 +2110,18 @@ exports.j68 = (function () {
                 regCode2.push('var mask=(1<<bit);');
                 regCode2.push('var dst=c.d[' + dstReg + ']>>>0;');
                 regCode2.push('var wasZero=((dst&mask)===0);');
-                if (bitOpReg === 1) regCode2.push('dst=(dst^mask)>>>0;');
-                if (bitOpReg === 2) regCode2.push('dst=(dst&(~mask))>>>0;');
-                if (bitOpReg === 3) regCode2.push('dst=(dst|mask)>>>0;');
-                if (bitOpReg !== 0) regCode2.push('c.d[' + dstReg + ']=dst;');
+                if (bitOpReg === 1) {
+                    regCode2.push('dst=(dst^mask)>>>0;');
+                }
+                if (bitOpReg === 2) {
+                    regCode2.push('dst=(dst&(~mask))>>>0;');
+                }
+                if (bitOpReg === 3) {
+                    regCode2.push('dst=(dst|mask)>>>0;');
+                }
+                if (bitOpReg !== 0) {
+                    regCode2.push('c.d[' + dstReg + ']=dst;');
+                }
                 return {
                     'code': regCode2,
                     'out': { 'z': 'wasZero' },
@@ -1888,23 +2130,33 @@ exports.j68 = (function () {
             }
 
             // Memory destination: bit number modulo 8.
-            var eaReg = this.effectiveAddress(
+            var eaReg = this.effectiveAddress( // pc, inst, regop, memop, size
                 pc, inst,
-                function () { return 'throw console.assert(false);'; },
+                function () { 
+                    return 'throw console.assert(false);'; 
+                },
                 function (ea) {
                     var memCode2 = [];
                     memCode2.push('var bit=(c.d[' + r + ']&7);');
                     memCode2.push('var mask=(1<<bit);');
                     memCode2.push('var dst=c.l8(' + ea + ');');
                     memCode2.push('var wasZero=((dst&mask)===0);');
-                    if (bitOpReg === 1) memCode2.push('dst=(dst^mask)&0xff;');
-                    if (bitOpReg === 2) memCode2.push('dst=(dst&(~mask))&0xff;');
-                    if (bitOpReg === 3) memCode2.push('dst=(dst|mask)&0xff;');
-                    if (bitOpReg !== 0) memCode2.push('c.s8(' + ea + ',dst);');
+                    if (bitOpReg === 1) {
+                        memCode2.push('dst=(dst^mask)&0xff;');
+                    }
+                    if (bitOpReg === 2) {
+                        memCode2.push('dst=(dst&(~mask))&0xff;');
+                    }
+                    if (bitOpReg === 3) {
+                        memCode2.push('dst=(dst|mask)&0xff;');
+                    }
+                    if (bitOpReg !== 0) {
+                        memCode2.push('c.s8(' + ea + ',dst);');
+                    }
                     return memCode2.join('');
                 },
                 1
-            );
+                );
             return {
                 'code': [eaReg.code],
                 'out': { 'z': 'wasZero' },
@@ -1944,22 +2196,25 @@ exports.j68 = (function () {
                 var logicExpr = immOp === 0x0200 ? '(dst&imm)' : immOp === 0x0000 ? '(dst|imm)' : '(dst^imm)';
                 var dstMode = (inst >> 3) & 7;
                 if (dstMode !== 1) {
-                    var immDst = this.effectiveAddressDst(
+                    var immDst = this.effectiveAddressDst( // pc, mode, r, regop, memop, size
                         immNextPc, dstMode, inst & 7,
                         function (ea) {
-                            if (immSize === 4)
+                            if (immSize === 4) {
                                 return 'var imm=' + immExpr + ';var dst=(' + ea + ')>>>0;var res=(' + logicExpr + ')>>>0;' + ea + '=res>>>0;';
+                            }
                             return 'var imm=' + immExpr + ';var dst=(' + ea + ')&' + immMask + ';var res=(' + logicExpr + ')&' + immMask + ';' + ea + '=((' + ea + ')&' + immKeepMask + ')|res;';
                         },
                         function (ea) {
-                            if (immSize === 1)
+                            if (immSize === 1) {
                                 return 'var imm=' + immExpr + ';var dst=c.l8(' + ea + ');var res=(' + logicExpr + ')&0xff;c.s8(' + ea + ',res);';
-                            if (immSize === 2)
+                            }
+                            if (immSize === 2) {
                                 return 'var imm=' + immExpr + ';var dst=c.l16(' + ea + ');var res=(' + logicExpr + ')&0xffff;c.s16(' + ea + ',res);';
+                            }
                             return 'var imm=' + immExpr + ';var dst=c.l32(' + ea + ');var res=(' + logicExpr + ')>>>0;c.s32(' + ea + ',res>>>0);';
                         },
                         immSize
-                    );
+                        );
                     return {
                         'code': [immDst.code],
                         'out': { 'n': '((res&' + immHighBit + ')!=0)', 'z': '((res&' + immMask + ')==0)', 'v': '0', 'c': '0' },
@@ -1973,19 +2228,29 @@ exports.j68 = (function () {
         var size = 1;
         var sizeMask = '0xff';
         var highBit = '0x80';
-        if ((opmode & 1) === 1) { size = 2; sizeMask = '0xffff'; highBit = '0x8000'; }
-        if ((opmode & 0x10) === 0x10) { size = 4; sizeMask = '0xffffffff'; highBit = '0x80000000'; }
+        if ((opmode & 1) === 1) { 
+            size = 2; sizeMask = '0xffff'; highBit = '0x8000'; 
+        }
+        if ((opmode & 0x10) === 0x10) { 
+            size = 4; sizeMask = '0xffffffff'; highBit = '0x80000000'; 
+        }
         
         // AND (opmode 0x00-0x03, 0x10-0x13)
         if ((opmode & 0x13) === 0x00 || (opmode & 0x13) === 0x10) {
             var dstReg = r;
             var srcInst = inst & 0x3f;
-            var ea = this.effectiveAddress(
+            var ea = this.effectiveAddress( // pc, inst, regop, memop, size
                 pc, srcInst,
-                function (ea) { return 'var src=(' + ea + ')&' + sizeMask + ';c.d[' + dstReg + ']&=src;'; },
                 function (ea) { 
-                    if (size === 1) return 'var src=c.l8(' + ea + ');c.d[' + dstReg + ']=(c.d[' + dstReg + ']&src)&0xffffffff;';
-                    if (size === 2) return 'var src=c.l16(' + ea + ');c.d[' + dstReg + ']=(c.d[' + dstReg + ']&src)&0xffffffff;';
+                    return 'var src=(' + ea + ')&' + sizeMask + ';c.d[' + dstReg + ']&=src;'; 
+                },
+                function (ea) { 
+                    if (size === 1) {
+                        return 'var src=c.l8(' + ea + ');c.d[' + dstReg + ']=(c.d[' + dstReg + ']&src)&0xffffffff;';
+                    }
+                    if (size === 2) {
+                        return 'var src=c.l16(' + ea + ');c.d[' + dstReg + ']=(c.d[' + dstReg + ']&src)&0xffffffff;';
+                    }
                     return 'var src=c.l32(' + ea + ');c.d[' + dstReg + ']=c.d[' + dstReg + ']&src;';
                 },
                 size);
@@ -2000,12 +2265,18 @@ exports.j68 = (function () {
         if ((opmode & 0x18) === 0x08 || (opmode & 0x18) === 0x18) {
             var dstReg = r;
             var srcInst = inst & 0x3f;
-            var ea = this.effectiveAddress(
+            var ea = this.effectiveAddress( // pc, inst, regop, memop, size
                 pc, srcInst,
-                function (ea) { return 'var src=(' + ea + ')&' + sizeMask + ';c.d[' + dstReg + ']|=src;'; },
                 function (ea) { 
-                    if (size === 1) return 'var src=c.l8(' + ea + ');c.d[' + dstReg + ']=(c.d[' + dstReg + ']|src)&0xffffffff;';
-                    if (size === 2) return 'var src=c.l16(' + ea + ');c.d[' + dstReg + ']=(c.d[' + dstReg + ']|src)&0xffffffff;';
+                    return 'var src=(' + ea + ')&' + sizeMask + ';c.d[' + dstReg + ']|=src;'; 
+                },
+                function (ea) { 
+                    if (size === 1) {
+                        return 'var src=c.l8(' + ea + ');c.d[' + dstReg + ']=(c.d[' + dstReg + ']|src)&0xffffffff;';
+                    }
+                    if (size === 2) {
+                        return 'var src=c.l16(' + ea + ');c.d[' + dstReg + ']=(c.d[' + dstReg + ']|src)&0xffffffff;';
+                    }
                     return 'var src=c.l32(' + ea + ');c.d[' + dstReg + ']=c.d[' + dstReg + ']|src;';
                 },
                 size);
@@ -2019,12 +2290,18 @@ exports.j68 = (function () {
         // EOR (opmode 0x09, 0x19) - EOR Dn, EA
         if ((opmode & 0x1B) === 0x09 || (opmode & 0x1B) === 0x19) {
             var srcReg = r;
-            var ea = this.effectiveAddress(
+            var ea = this.effectiveAddress( // pc, inst, regop, memop, size
                 pc, inst,
-                function (ea) { return ea + '^=c.d[' + srcReg + '];'; },
                 function (ea) { 
-                    if (size === 1) return 'c.s8(' + ea + ',c.l8(' + ea + ')^c.d[' + srcReg + ']);';
-                    if (size === 2) return 'c.s16(' + ea + ',c.l16(' + ea + ')^c.d[' + srcReg + ']);';
+                    return ea + '^=c.d[' + srcReg + '];'; 
+                },
+                function (ea) { 
+                    if (size === 1) {
+                        return 'c.s8(' + ea + ',c.l8(' + ea + ')^c.d[' + srcReg + ']);';
+                    }
+                    if (size === 2) {
+                        return 'c.s16(' + ea + ',c.l16(' + ea + ')^c.d[' + srcReg + ']);';
+                    }
                     return 'c.s32(' + ea + ',c.l32(' + ea + ')^c.d[' + srcReg + ']);';
                 },
                 size);
@@ -2045,12 +2322,16 @@ exports.j68 = (function () {
         var dstReg = (inst >> 9) & 7;
         var dstMode = (inst >> 6) & 7;
         var srcInst = inst & 0x1ff;
-        var src = this.effectiveAddress(
+        var src = this.effectiveAddress( // pc, inst, regop, memop, size
             pc, srcInst,
-            function (ea) { return 'var src=(' + ea + ')&0xff;'; },
-            function (ea) { return 'var src=c.l8(' + ea + ')&0xff;'; },
+            function (ea) { 
+                return 'var src=(' + ea + ')&0xff;'; 
+            },
+            function (ea) { 
+                return 'var src=c.l8(' + ea + ')&0xff;'; 
+            },
             1
-        );
+            );
 
         if (dstMode === 1) {
             return {
@@ -2061,12 +2342,16 @@ exports.j68 = (function () {
             };
         }
 
-        var dst = this.effectiveAddressDst(
+        var dst = this.effectiveAddressDst( // pc, mode, r, regop, memop, size
             src.pc, dstMode, dstReg,
-            function (ea) { return ea + '=(' + ea + '&0xffffff00)|src;'; },
-            function (ea) { return 'c.s8(' + ea + ',src);'; },
+            function (ea) { 
+                return ea + '=(' + ea + '&0xffffff00)|src;'; 
+            },
+            function (ea) { 
+                return 'c.s8(' + ea + ',src);'; 
+            },
             1
-        );
+            );
         return {
             'code': [ src.code, dst.code ],
             'out': this.flagMove('src'),
@@ -2080,28 +2365,40 @@ exports.j68 = (function () {
         var dstMode = (inst >> 6) & 7;
         var srcInst = inst & 0x1ff;
         if (dstMode === 1) {  // MOVEA.w
-            var ea = this.effectiveAddress(
+            var ea = this.effectiveAddress( // pc, inst, regop, memop, size
                 pc, srcInst,
-                function (ea) { return 'c.a[' + dstReg + ']=c.xw(' + ea + '&0xffff);'; },
-                function (ea) { return 'c.a[' + dstReg + ']=c.xw(c.l16(' + ea + ')&0xffff);'; },
+                function (ea) { 
+                    return 'c.a[' + dstReg + ']=c.xw(' + ea + '&0xffff);'; 
+                },
+                function (ea) { 
+                    return 'c.a[' + dstReg + ']=c.xw(c.l16(' + ea + ')&0xffff);'; 
+                },
                 2
-            );
+                );
             return { 'code': [ ea.code ], 'pc': ea.pc };
         }
 
-        var src = this.effectiveAddress(
+        var src = this.effectiveAddress( // pc, inst, regop, memop, size
             pc, srcInst,
-            function (ea) { return 'var src=(' + ea + ')&0xffff;'; },
-            function (ea) { return 'var src=c.l16(' + ea + ')&0xffff;'; },
+            function (ea) { 
+                return 'var src=(' + ea + ')&0xffff;'; 
+            },
+            function (ea) { 
+                return 'var src=c.l16(' + ea + ')&0xffff;'; 
+            },
             2
-        );
+            );
 
-        var dst = this.effectiveAddressDst(
+        var dst = this.effectiveAddressDst( // pc, mode, r, regop, memop, size
             src.pc, dstMode, dstReg,
-            function (ea) { return ea + '=((' + ea + ')&0xffff0000)|src;'; },
-            function (ea) { return 'c.s16(' + ea + ',src);'; },
+            function (ea) { 
+                return ea + '=((' + ea + ')&0xffff0000)|src;'; 
+            },
+            function (ea) { 
+                return 'c.s16(' + ea + ',src);'; 
+            },
             2
-        );
+            );
 
         return {
             'code': [ src.code, dst.code ],
@@ -2127,18 +2424,22 @@ exports.j68 = (function () {
         if (opmode === 3 || opmode === 7) {
             var size = (inst & 0x100) ? 4 : 2;
             var highBit = '0x80000000';
-            var ea = this.effectiveAddress(
+            var ea = this.effectiveAddress( // pc, inst, regop, memop, size
                 pc, inst,
                 function (ea) {
-                    if (size === 4) return 'var src=(' + ea + ')>>>0;';
+                    if (size === 4) {
+                        return 'var src=(' + ea + ')>>>0;';
+                    }
                     return 'var src=c.xw((' + ea + ')&0xffff);';
                 },
                 function (ea) { 
-                    if (size === 4) return 'var src=c.l32(' + ea + ');';
+                    if (size === 4) {
+                        return 'var src=c.l32(' + ea + ');';
+                    }
                     return 'var src=c.xw(c.l16(' + ea + '));';
                 },
                 size
-            );
+                );
             return {
                 'code': [ea.code, 'var dst=c.a[' + r + '];var res=(dst-src)>>>0;'],
                 'out': this.flagSub('dst', 'src', 'res', highBit, '0xffffffff'),
@@ -2150,16 +2451,22 @@ exports.j68 = (function () {
             var size = opmode === 0 ? 1 : opmode === 1 ? 2 : 4;
             var sizeMask = size === 1 ? '0xff' : size === 2 ? '0xffff' : '0xffffffff';
             var highBit = size === 1 ? '0x80' : size === 2 ? '0x8000' : '0x80000000';
-            var ea = this.effectiveAddress(
+            var ea = this.effectiveAddress( // pc, inst, regop, memop, size
                 pc, inst,
-                function (ea) { return 'var src=(' + ea + ')&' + sizeMask + ';var dst=c.d[' + r + ']&' + sizeMask + ';var res=(dst-src)&' + sizeMask + ';'; },
+                function (ea) { 
+                    return 'var src=(' + ea + ')&' + sizeMask + ';var dst=c.d[' + r + ']&' + sizeMask + ';var res=(dst-src)&' + sizeMask + ';'; 
+                },
                 function (ea) {
-                    if (size === 1) return 'var src=c.l8(' + ea + ');var dst=c.d[' + r + ']&0xff;var res=(dst-src)&0xff;';
-                    if (size === 2) return 'var src=c.l16(' + ea + ');var dst=c.d[' + r + ']&0xffff;var res=(dst-src)&0xffff;';
+                    if (size === 1) {
+                        return 'var src=c.l8(' + ea + ');var dst=c.d[' + r + ']&0xff;var res=(dst-src)&0xff;';
+                    }
+                    if (size === 2) {
+                        return 'var src=c.l16(' + ea + ');var dst=c.d[' + r + ']&0xffff;var res=(dst-src)&0xffff;';
+                    }
                     return 'var src=c.l32(' + ea + ');var dst=c.d[' + r + '];var res=(dst-src)>>>0;';
                 },
                 size
-            );
+                );
             return {
                 'code': [ea.code],
                 'out': this.flagSub('dst', 'src', 'res', highBit, sizeMask),
@@ -2175,18 +2482,18 @@ exports.j68 = (function () {
             var srcStep = (size === 1 && srcReg === 7) ? 2 : size;
             var dstStep = (size === 1 && r === 7) ? 2 : size;
             var loadSrc = size === 1 ? 'var src=c.l8(c.a[' + srcReg + ']);' :
-                size === 2 ? 'var src=c.l16(c.a[' + srcReg + ']);' :
-                'var src=c.l32(c.a[' + srcReg + ']);';
+            size === 2 ? 'var src=c.l16(c.a[' + srcReg + ']);' :
+            'var src=c.l32(c.a[' + srcReg + ']);';
             var loadDst = size === 1 ? 'var dst=c.l8(c.a[' + r + ']);' :
-                size === 2 ? 'var dst=c.l16(c.a[' + r + ']);' :
-                'var dst=c.l32(c.a[' + r + ']);';
+            size === 2 ? 'var dst=c.l16(c.a[' + r + ']);' :
+            'var dst=c.l32(c.a[' + r + ']);';
             return {
                 'code': [
-                    loadSrc +
-                    'c.a[' + srcReg + ']+=' + srcStep + ';' +
-                    loadDst +
-                    'c.a[' + r + ']+=' + dstStep + ';' +
-                    'var res=(dst-src)&' + sizeMask + ';'
+                loadSrc +
+                'c.a[' + srcReg + ']+=' + srcStep + ';' +
+                loadDst +
+                'c.a[' + r + ']+=' + dstStep + ';' +
+                'var res=(dst-src)&' + sizeMask + ';'
                 ],
                 'out': this.flagSub('dst', 'src', 'res', highBit, sizeMask),
                 'pc': pc + 2
@@ -2198,20 +2505,25 @@ exports.j68 = (function () {
             var eorMask = eorSize === 1 ? '0xff' : eorSize === 2 ? '0xffff' : '0xffffffff';
             var eorHighBit = eorSize === 1 ? '0x80' : eorSize === 2 ? '0x8000' : '0x80000000';
             var eorKeepMask = eorSize === 1 ? '0xffffff00' : eorSize === 2 ? '0xffff0000' : '0x0';
-            var eorDst = this.effectiveAddressDst(
+            var eorDst = this.effectiveAddressDst( // pc, mode, r, regop, memop, size
                 pc + 2, (inst >> 3) & 7, inst & 7,
                 function (dstEa) {
-                    if (eorSize === 4)
+                    if (eorSize === 4) {
                         return 'var src=c.d[' + r + ']>>>0;var dst=(' + dstEa + ')>>>0;var res=(dst^src)>>>0;' + dstEa + '=res>>>0;';
+                    }
                     return 'var src=c.d[' + r + ']&' + eorMask + ';var dst=(' + dstEa + ')&' + eorMask + ';var res=(dst^src)&' + eorMask + ';' + dstEa + '=((' + dstEa + ')&' + eorKeepMask + ')|res;';
                 },
                 function (dstEa) {
-                    if (eorSize === 1) return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst^src)&0xff;c.s8(' + dstEa + ',res);';
-                    if (eorSize === 2) return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst^src)&0xffff;c.s16(' + dstEa + ',res);';
+                    if (eorSize === 1) {
+                        return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst^src)&0xff;c.s8(' + dstEa + ',res);';
+                    }
+                    if (eorSize === 2) {
+                        return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst^src)&0xffff;c.s16(' + dstEa + ',res);';
+                    }
                     return 'var src=c.d[' + r + ']>>>0;var dst=c.l32(' + dstEa + ');var res=(dst^src)>>>0;c.s32(' + dstEa + ',res>>>0);';
                 },
                 eorSize
-            );
+                );
             return {
                 'code': [eorDst.code],
                 'out': { 'n': '((res&' + eorHighBit + ')!=0)', 'z': '((res&' + eorMask + ')==0)', 'v': '0', 'c': '0' },
@@ -2230,12 +2542,16 @@ exports.j68 = (function () {
         var r2 = inst & 7;
         // MULS
         if (opmode === 7) {
-            var ea = this.effectiveAddress(
+            var ea = this.effectiveAddress( // pc, inst, regop, memop, size
                 pc, inst,
-                function (ea) { return 'c.d[' + r + ']=c.xw((' + ea + ')&0xffff)*c.xw(c.d[' + r + ']&0xffff);'; },
-                function (ea) { return 'c.d[' + r + ']=c.xw(c.l16(' + ea + '))*c.xw(c.d[' + r + ']&0xffff);'; },
+                function (ea) { 
+                    return 'c.d[' + r + ']=c.xw((' + ea + ')&0xffff)*c.xw(c.d[' + r + ']&0xffff);'; 
+                },
+                function (ea) { 
+                    return 'c.d[' + r + ']=c.xw(c.l16(' + ea + '))*c.xw(c.d[' + r + ']&0xffff);'; 
+                },
                 2
-            );
+                );
             return {
                 'code': [ea.code],
                 'out': this.flagMove('c.d[' + r + ']'),
@@ -2244,12 +2560,16 @@ exports.j68 = (function () {
         }
         // MULU
         if (opmode === 3) {
-            var ea = this.effectiveAddress(
+            var ea = this.effectiveAddress( // pc, inst, regop, memop, size
                 pc, inst,
-                function (ea) { return 'c.d[' + r + ']=(' + ea + '&0xffff)*(c.d[' + r + ']&0xffff);'; },
-                function (ea) { return 'c.d[' + r + ']=(c.l16(' + ea + ')&0xffff)*(c.d[' + r + ']&0xffff);'; },
+                function (ea) { 
+                    return 'c.d[' + r + ']=(' + ea + '&0xffff)*(c.d[' + r + ']&0xffff);'; 
+                },
+                function (ea) { 
+                    return 'c.d[' + r + ']=(c.l16(' + ea + ')&0xffff)*(c.d[' + r + ']&0xffff);'; 
+                },
                 2
-            );
+                );
             return {
                 'code': [ea.code],
                 'out': this.flagMove('c.d[' + r + ']'),
@@ -2276,40 +2596,50 @@ exports.j68 = (function () {
             var andHighBit = andSize === 1 ? '0x80' : andSize === 2 ? '0x8000' : '0x80000000';
             var andKeepMask = andSize === 1 ? '0xffffff00' : andSize === 2 ? '0xffff0000' : '0x0';
             if (opmode <= 2) {  // AND <ea>,Dn
-                var andEa = this.effectiveAddress(
+                var andEa = this.effectiveAddress( // pc, inst, regop, memop, size
                     pc, inst,
                     function (srcEa) {
-                        if (andSize === 4)
+                        if (andSize === 4) {
                             return 'var src=(' + srcEa + ')>>>0;var dst=c.d[' + r + ']>>>0;var res=(dst&src)>>>0;c.d[' + r + ']=res>>>0;';
+                        }
                         return 'var src=(' + srcEa + ')&' + andMask + ';var dst=c.d[' + r + ']&' + andMask + ';var res=(dst&src)&' + andMask + ';c.d[' + r + ']=(c.d[' + r + ']&' + andKeepMask + ')|res;';
                     },
                     function (srcEa) {
-                        if (andSize === 1) return 'var src=c.l8(' + srcEa + ');var dst=c.d[' + r + ']&0xff;var res=(dst&src)&0xff;c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|res;';
-                        if (andSize === 2) return 'var src=c.l16(' + srcEa + ');var dst=c.d[' + r + ']&0xffff;var res=(dst&src)&0xffff;c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|res;';
+                        if (andSize === 1) {
+                            return 'var src=c.l8(' + srcEa + ');var dst=c.d[' + r + ']&0xff;var res=(dst&src)&0xff;c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|res;';
+                        }
+                        if (andSize === 2) {
+                            return 'var src=c.l16(' + srcEa + ');var dst=c.d[' + r + ']&0xffff;var res=(dst&src)&0xffff;c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|res;';
+                        }
                         return 'var src=c.l32(' + srcEa + ');var dst=c.d[' + r + ']>>>0;var res=(dst&src)>>>0;c.d[' + r + ']=res>>>0;';
                     },
                     andSize
-                );
+                    );
                 return {
                     'code': [andEa.code],
                     'out': { 'n': '((res&' + andHighBit + ')!=0)', 'z': '((res&' + andMask + ')==0)', 'v': '0', 'c': '0' },
                     'pc': andEa.pc
                 };
             }
-            var andDst = this.effectiveAddressDst(
+            var andDst = this.effectiveAddressDst( // pc, mode, r, regop, memop, size
                 pc + 2, (inst >> 3) & 7, inst & 7,
                 function (dstEa) {
-                    if (andSize === 4)
+                    if (andSize === 4){
                         return 'var src=c.d[' + r + ']>>>0;var dst=(' + dstEa + ')>>>0;var res=(dst&src)>>>0;' + dstEa + '=res>>>0;';
+                    }
                     return 'var src=c.d[' + r + ']&' + andMask + ';var dst=(' + dstEa + ')&' + andMask + ';var res=(dst&src)&' + andMask + ';' + dstEa + '=((' + dstEa + ')&' + andKeepMask + ')|res;';
                 },
                 function (dstEa) {
-                    if (andSize === 1) return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst&src)&0xff;c.s8(' + dstEa + ',res);';
-                    if (andSize === 2) return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst&src)&0xffff;c.s16(' + dstEa + ',res);';
+                    if (andSize === 1) {
+                        return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst&src)&0xff;c.s8(' + dstEa + ',res);';
+                    }
+                    if (andSize === 2) {
+                        return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst&src)&0xffff;c.s16(' + dstEa + ',res);';
+                    }
                     return 'var src=c.d[' + r + ']>>>0;var dst=c.l32(' + dstEa + ');var res=(dst&src)>>>0;c.s32(' + dstEa + ',res>>>0);';
                 },
                 andSize
-            );
+                );
             return {
                 'code': [andDst.code],
                 'out': { 'n': '((res&' + andHighBit + ')!=0)', 'z': '((res&' + andMask + ')==0)', 'v': '0', 'c': '0' },
