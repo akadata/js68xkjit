@@ -98,16 +98,21 @@ var LABEL_RE = '[.]?[a-z_][a-z0-9_]*';
 
 function isRegisterMaskOperand(text) {
     var operand = String(text || '').trim().toLowerCase();
-    if (operand === '')
+    if (operand === '') {
         return false;
-    if (/[()]/.test(operand))
+    }
+    if (/[()]/.test(operand)) {
         return false;
-    if (operand.indexOf('/') !== -1)
+    }
+    if (operand.indexOf('/') !== -1) {
         return true;
-    if (/^[da][0-7]-[da][0-7]/.test(operand))
+    }
+    if (/^[da][0-7]-[da][0-7]/.test(operand)) {
         return true;
-    if (/^[da][0-7](?:\/[da][0-7])+$/.test(operand))
+    }
+    if (/^[da][0-7](?:\/[da][0-7])+$/.test(operand)) {
         return true;
+    }
     return /^[da][0-7]$/.test(operand);
 }
 
@@ -122,14 +127,16 @@ function cleanLine(line) {
 function parseLabelLine(line) {
     var cleaned = cleanLine(line);
     var match;
-    if (cleaned === '')
+    if (cleaned === '') {
         return null;
+    }
     match = new RegExp('^(' + LABEL_RE + '):(?:\\s*(.*))?$', 'i').exec(cleaned);
-    if (!match)
+    if (!match) {
         return {
             label: '',
             instruction: cleaned
         };
+    }
     return {
         label: match[1].toLowerCase(),
         instruction: cleanLine(match[2] || '')
@@ -139,34 +146,44 @@ function parseLabelLine(line) {
 function parseImmediateLiteral(text) {
     var value = String(text || '').trim();
     var expressionValue;
-    if (/^-?[0-9]+$/i.test(value))
+    if (/^-?[0-9]+$/i.test(value)) {
         return (parseInt(value, 10) | 0) >>> 0;
-    if (/^-\$[0-9a-f]+$/i.test(value))
+    }
+    if (/^-\$[0-9a-f]+$/i.test(value)) {
         return (-parseInt(value.slice(2), 16)) >>> 0;
-    if (/^-0x[0-9a-f]+$/i.test(value))
+    }
+    if (/^-0x[0-9a-f]+$/i.test(value)) {
         return (-parseInt(value.slice(3), 16)) >>> 0;
-    if (/^\$[0-9a-f]+$/i.test(value))
+    }
+    if (/^\$[0-9a-f]+$/i.test(value)) {
         return parseInt(value.slice(1), 16) >>> 0;
-    if (/^0x[0-9a-f]+$/i.test(value))
+    }
+    if (/^0x[0-9a-f]+$/i.test(value)) {
         return parseInt(value, 16) >>> 0;
+    }
     expressionValue = evaluateExpression(value);
-    if (expressionValue !== null)
+    if (expressionValue !== null) {
         return expressionValue >>> 0;
+    }
     throw new Error('invalid immediate: ' + value);
 }
 
 function parseAddressLiteral(text) {
     var value = String(text || '').trim();
     var expressionValue;
-    if (/^\$[0-9a-f]+$/i.test(value))
+    if (/^\$[0-9a-f]+$/i.test(value)) {
         return parseInt(value.slice(1), 16) >>> 0;
-    if (/^0x[0-9a-f]+$/i.test(value))
+    }
+    if (/^0x[0-9a-f]+$/i.test(value)) {
         return parseInt(value, 16) >>> 0;
-    if (/^[0-9a-f]+$/i.test(value))
+    }
+    if (/^[0-9a-f]+$/i.test(value)) {
         return parseInt(value, 16) >>> 0;
+    }
     expressionValue = evaluateExpression(value);
-    if (expressionValue !== null)
+    if (expressionValue !== null) {
         return expressionValue >>> 0;
+    }
     throw new Error('invalid literal: ' + value);
 }
 
@@ -184,24 +201,30 @@ function normalizeSyntax(line) {
 function mnemonicOf(line) {
     var cleaned = cleanLine(line);
     var token;
-    if (cleaned === '')
+    if (cleaned === '') {
         return '';
+    }
     token = cleaned.split(/\s+/, 1)[0].toLowerCase();
     return token.split('.', 1)[0];
 }
 
 function validateLine(line) {
     var mnemonic = mnemonicOf(line);
-    if (mnemonic === '')
+    if (mnemonic === '') {
         return;
-    if (/^org\b/i.test(cleanLine(line)))
+    }
+    if (/^org\b/i.test(cleanLine(line))) {
         return;
-    if (new RegExp('^' + LABEL_RE + '\\s+equ\\b', 'i').test(cleanLine(line)))
+    }
+    if (new RegExp('^' + LABEL_RE + '\\s+equ\\b', 'i').test(cleanLine(line))) {
         return;
-    if (/^dc\.[bwl]\b/i.test(cleanLine(line)))
+    }
+    if (/^dc\.[bwl]\b/i.test(cleanLine(line))) {
         return;
-    if (!ALLOWED[mnemonic])
+    }
+    if (!ALLOWED[mnemonic]) {
         throw new Error('Illegal Instruction');
+    }
 }
 
 function isLabelName(text) {
@@ -210,28 +233,36 @@ function isLabelName(text) {
 
 function symbolValue(text) {
     var key = String(text || '').trim().toLowerCase();
-    if (!currentSymbols || !Object.prototype.hasOwnProperty.call(currentSymbols, key))
+    if (!currentSymbols || !Object.prototype.hasOwnProperty.call(currentSymbols, key)) {
         return null;
+    }
     return currentSymbols[key] >>> 0;
 }
 
 function expressionAtom(text) {
     var value = String(text || '').trim();
     var symbol = symbolValue(value);
-    if (symbol !== null)
+    if (symbol !== null) {
         return symbol >>> 0;
-    if (/^-?[0-9]+$/i.test(value))
+    }
+    if (/^-?[0-9]+$/i.test(value)) {
         return (parseInt(value, 10) | 0) >>> 0;
-    if (/^-\$[0-9a-f]+$/i.test(value))
+    }
+    if (/^-\$[0-9a-f]+$/i.test(value)) {
         return (-parseInt(value.slice(2), 16)) >>> 0;
-    if (/^-0x[0-9a-f]+$/i.test(value))
+    }
+    if (/^-0x[0-9a-f]+$/i.test(value)) {
         return (-parseInt(value.slice(3), 16)) >>> 0;
-    if (/^\$[0-9a-f]+$/i.test(value))
+    }
+    if (/^\$[0-9a-f]+$/i.test(value)) {
         return parseInt(value.slice(1), 16) >>> 0;
-    if (/^0x[0-9a-f]+$/i.test(value))
+    }
+    if (/^0x[0-9a-f]+$/i.test(value)) {
         return parseInt(value, 16) >>> 0;
-    if (/^[0-9a-f]+$/i.test(value))
+    }
+    if (/^[0-9a-f]+$/i.test(value)) {
         return parseInt(value, 16) >>> 0;
+    }
     return null;
 }
 
@@ -241,8 +272,9 @@ function evaluateExpression(text) {
     var i;
     var result = 0;
 
-    if (value === '')
+    if (value === '') {
         return null;
+    }
     orParts = value.split('|');
     for (i = 0; i < orParts.length; ++i) {
         var sumText = orParts[i].trim();
@@ -250,8 +282,9 @@ function evaluateExpression(text) {
         var j;
         var sum;
         var sign;
-        if (sumText === '')
+        if (sumText === '') {
             return null;
+        }
         tokens = sumText.split(/([+-])/).map(function (token) {
             return token.trim();
         }).filter(Boolean);
@@ -265,17 +298,21 @@ function evaluateExpression(text) {
                 continue;
             }
             atom = expressionAtom(token);
-            if (atom === null)
+            if (atom === null) {
                 return null;
-            if (sum === null)
+            }
+            if (sum === null) {
                 sum = atom >>> 0;
-            else if (sign === '+')
+            }
+            else if (sign === '+') {
                 sum = (sum + atom) >>> 0;
-            else
+            } else {
                 sum = (sum - atom) >>> 0;
+            }
         }
-        if (sum === null)
+        if (sum === null) {
             return null;
+        }
         result = (result | sum) >>> 0;
     }
     return result >>> 0;
@@ -285,12 +322,14 @@ function branchTargetExpression(address, line) {
     var match = /^(bra|bsr|bne|beq)(?:\.[a-z])?\s+(\$?(?:0x)?[0-9a-f]+)$/i.exec(line);
     var target;
     var delta;
-    if (!match)
+    if (!match) {
         return line;
+    }
     target = parseAddressLiteral(match[2]);
     delta = ((target - ((address + 2) >>> 0)) | 0);
-    if (delta === 0)
+    if (delta === 0) {
         return match[1] + ' .';
+    }
     return match[1] + ' .' + (delta > 0 ? '+' : '') + delta;
 }
 
@@ -303,8 +342,9 @@ function resolveLabelReference(address, line, labels, allowUnknown) {
     var target;
     var match;
 
-    if (cleaned === '')
+    if (cleaned === '') {
         return cleaned;
+    }
 
     mnemonic = cleaned.split(/\s+/, 1)[0];
     parts = cleaned.split(/\s+/, 2);
@@ -313,25 +353,28 @@ function resolveLabelReference(address, line, labels, allowUnknown) {
     if (/^(bra|bsr|bne|beq)(?:\.[a-z])?$/i.test(mnemonic) && isLabelName(operand)) {
         label = operand.toLowerCase();
         if (!Object.prototype.hasOwnProperty.call(labels, label)) {
-            if (allowUnknown)
+            if (allowUnknown) {
                 target = address >>> 0;
-            else
+            } else {
                 throw new Error('unknown label: ' + operand);
+            }
         } else {
             target = labels[label] >>> 0;
         }
-        if (!/\.[a-z]$/i.test(mnemonic))
+        if (!/\.[a-z]$/i.test(mnemonic)) {
             mnemonic += '.w';
+        }
         return mnemonic + ' ' + hex(target, 8);
     }
 
     if (/^(jmp|jsr)(?:\.[a-z])?$/i.test(mnemonic) && isLabelName(operand)) {
         label = operand.toLowerCase();
         if (!Object.prototype.hasOwnProperty.call(labels, label)) {
-            if (allowUnknown)
+            if (allowUnknown) {
                 target = 0;
-            else
+            } else {
                 throw new Error('unknown label: ' + operand);
+            }
         } else {
             target = labels[label] >>> 0;
         }
@@ -342,10 +385,11 @@ function resolveLabelReference(address, line, labels, allowUnknown) {
     if (match) {
         label = match[3].toLowerCase();
         if (!Object.prototype.hasOwnProperty.call(labels, label)) {
-            if (allowUnknown)
+            if (allowUnknown) {
                 target = address >>> 0;
-            else
+            } else {
                 throw new Error('unknown label: ' + match[3]);
+            }
         } else {
             target = labels[label] >>> 0;
         }
@@ -356,10 +400,11 @@ function resolveLabelReference(address, line, labels, allowUnknown) {
     if (match) {
         label = match[2].toLowerCase();
         if (!Object.prototype.hasOwnProperty.call(labels, label)) {
-            if (allowUnknown)
+            if (allowUnknown) {
                 target = 0;
-            else
+            } else {
                 throw new Error('unknown label: ' + match[2]);
+            }
         } else {
             target = labels[label] >>> 0;
         }
@@ -380,8 +425,9 @@ function splitDataItems(text) {
         ch = text.charAt(i);
         if (quote) {
             current += ch;
-            if (ch === quote)
+            if (ch === quote) {
                 quote = '';
+            }
             continue;
         }
         if (ch === '\'' || ch === '"') {
@@ -390,18 +436,21 @@ function splitDataItems(text) {
             continue;
         }
         if (ch === ',') {
-            if (current.trim() !== '')
+            if (current.trim() !== '') {
                 items.push(current.trim());
+            }
             current = '';
             continue;
         }
         current += ch;
     }
 
-    if (quote)
+    if (quote) {
         throw new Error('unterminated string literal');
-    if (current.trim() !== '')
+    }
+    if (current.trim() !== '') {
         items.push(current.trim());
+    }
     return items;
 }
 
@@ -414,37 +463,46 @@ function splitOperands(text) {
 
     for (i = 0; i < text.length; ++i) {
         ch = text.charAt(i);
-        if (ch === '(')
+        if (ch === '(') {
             depth += 1;
-        else if (ch === ')' && depth > 0)
+        } else if (ch === ')' && depth > 0) {
             depth -= 1;
+        }
         if (ch === ',' && depth === 0) {
-            if (current.trim() !== '')
+            if (current.trim() !== '') {
                 items.push(current.trim());
+            }
             current = '';
             continue;
         }
         current += ch;
     }
-    if (current.trim() !== '')
+    if (current.trim() !== '') {
         items.push(current.trim());
+    }
     return items;
 }
 
 function numericValue(text) {
     var value = String(text || '').trim();
-    if (/^-?[0-9]+$/i.test(value))
+    if (/^-?[0-9]+$/i.test(value)) {
         return (parseInt(value, 10) | 0) >>> 0;
-    if (/^-\$[0-9a-f]+$/i.test(value))
+    }
+    if (/^-\$[0-9a-f]+$/i.test(value)) {
         return (-parseInt(value.slice(2), 16)) >>> 0;
-    if (/^-0x[0-9a-f]+$/i.test(value))
+    }
+    if (/^-0x[0-9a-f]+$/i.test(value)) {
         return (-parseInt(value.slice(3), 16)) >>> 0;
-    if (/^\$[0-9a-f]+$/i.test(value))
+    }
+    if (/^\$[0-9a-f]+$/i.test(value)) {
         return parseInt(value.slice(1), 16) >>> 0;
-    if (/^0x[0-9a-f]+$/i.test(value))
+    }
+    if (/^0x[0-9a-f]+$/i.test(value)) {
         return parseInt(value, 16) >>> 0;
-    if (/^[0-9a-f]+$/i.test(value))
+    }
+    if (/^[0-9a-f]+$/i.test(value)) {
         return parseInt(value, 16) >>> 0;
+    }
     return null;
 }
 
@@ -456,25 +514,34 @@ function eaExtensionWords(operand, size) {
     var op = String(operand || '').trim().toLowerCase();
     var value;
 
-    if (op === '')
+    if (op === '') {
         return 0;
-    if (/^#/.test(op))
+    }
+    if (/^#/.test(op)) {
         return immediateWords(size);
-    if (/^%?(d|a)[0-7]$/.test(op) || op === '%pc' || op === 'pc' || op === '%sr' || op === 'sr')
+    }
+    if (/^%?(d|a)[0-7]$/.test(op) || op === '%pc' || op === 'pc' || op === '%sr' || op === 'sr') {
         return 0;
-    if (/^\(%?a[0-7]\)$/.test(op) || /^\(%?a[0-7]\)\+$/.test(op) || /^-\(%?a[0-7]\)$/.test(op))
+    }
+    if (/^\(%?a[0-7]\)$/.test(op) || /^\(%?a[0-7]\)\+$/.test(op) || /^-\(%?a[0-7]\)$/.test(op)) {
         return 0;
-    if (/^\([^)]*\)\.(w|l)$/.test(op))
+    }
+    if (/^\([^)]*\)\.(w|l)$/.test(op)) {
         return /\)\.l$/.test(op) ? 2 : 1;
-    if (/^\(.*\)$/.test(op))
+    }
+    if (/^\(.*\)$/.test(op)) {
         return 0;
-    if (/\.w$/i.test(op))
+    }
+    if (/\.w$/i.test(op)) {
         return 1;
-    if (/\.l$/i.test(op))
+    }
+    if (/\.l$/i.test(op)) {
         return 2;
+    }
     value = numericValue(op);
-    if (value !== null)
+    if (value !== null) {
         return value > 0xffff ? 2 : 1;
+    }
     return 0;
 }
 
@@ -486,16 +553,20 @@ function expectedInstructionLength(line) {
     var operands;
     var bitSrc;
 
-    if (cleaned === '')
+    if (cleaned === '') {
         return 0;
-    if (/^dc\.[bwl]\b/i.test(cleaned))
+    }
+    if (/^dc\.[bwl]\b/i.test(cleaned)) {
         return null;
-    if (/^monitor$/i.test(cleaned))
+    }
+    if (/^monitor$/i.test(cleaned)) {
         return 2;
+    }
 
     match = /^([a-z]+)(?:\.([bwl]))?(?:\s+(.*))?$/i.exec(cleaned);
-    if (!match)
+    if (!match) {
         return null;
+    }
     mnemonic = match[1].toLowerCase();
     size = (match[2] || '').toLowerCase();
     operands = splitOperands(match[3] || '');
@@ -547,8 +618,9 @@ function expectedInstructionLength(line) {
         case 'ror':
         case 'roxl':
         case 'roxr':
-            if (/^b(chg|clr|set|tst)$/.test(mnemonic))
+            if (/^b(chg|clr|set|tst)$/.test(mnemonic)) {
                 return 2 + eaExtensionWords(operands[1], 'w') * 2 + (/^#/.test(bitSrc) ? 2 : 0);
+            }
             return 2 + eaExtensionWords(operands[operands.length - 1], size || 'w') * 2;
         case 'abcd':
         case 'sbcd':
@@ -627,16 +699,18 @@ function parseDcDirective(line) {
     var item;
     var stringMatch;
     var j;
-    if (!match)
+    if (!match) {
         throw new Error('unsupported dc directive');
+    }
     width = match[1].toLowerCase();
     items = splitDataItems(match[2]);
     for (i = 0; i < items.length; ++i) {
         item = items[i];
         stringMatch = /^(['"])(.*)\1$/.exec(item);
         if (stringMatch) {
-            if (width !== 'b')
+            if (width !== 'b') {
                 throw new Error('string literal only allowed in dc.b');
+            }
             for (j = 0; j < stringMatch[2].length; ++j)
                 bytes.push(stringMatch[2].charCodeAt(j) & 0xff);
             continue;
@@ -658,10 +732,12 @@ function parseDcDirective(line) {
 
 function parseRelativeTarget(address, operand) {
     var match = /^\.((?:[+-][0-9]+)?)$/i.exec(String(operand || '').trim());
-    if (!match)
+    if (!match) {
         return null;
-    if (!match[1])
+    }
+    if (!match[1]) {
         return address >>> 0;
+    }
     return (((address >>> 0) + parseInt(match[1], 10)) >>> 0);
 }
 
@@ -682,18 +758,21 @@ function assembleBranch(address, line) {
     var displacement;
     var opcode;
 
-    if (!match)
+    if (!match) {
         return null;
+    }
     size = (match[2] || 'w').toLowerCase();
     target = parseRelativeTarget(address, match[3]);
-    if (target === null)
+    if (target === null) {
         target = parseAddressLiteral(match[3]);
+    }
     opcode = branchOpcode(match[1]);
 
     if (size === 'b' || size === 's') {
         displacement = (target - ((address + 2) >>> 0)) | 0;
-        if (displacement < -128 || displacement > 127 || displacement === 0)
+        if (displacement < -128 || displacement > 127 || displacement === 0) {
             throw new Error('branch target out of range for .b');
+        }
         return Uint8Array.from([ (opcode >>> 8) & 0xff, displacement & 0xff ]);
     }
 
@@ -707,27 +786,31 @@ function assembleDbra(address, line) {
     var displacement;
     var reg;
 
-    if (!match)
+    if (!match) {
         return null;
+    }
     reg = parseInt(match[1].slice(1), 10) & 7;
     target = parseRelativeTarget(address, match[2]);
-    if (target === null)
+    if (target === null) {
         target = parseAddressLiteral(match[2]);
+    }
     displacement = (target - ((address + 2) >>> 0)) | 0;
     return Uint8Array.from([ 0x51, 0xc8 | reg, (displacement >>> 8) & 0xff, displacement & 0xff ]);
 }
 
 function parseRegister(text, kind) {
     var match = new RegExp('^' + kind + '([0-7])$', 'i').exec(String(text || '').trim());
-    if (!match)
+    if (!match) {
         return null;
+    }
     return parseInt(match[1], 10) & 7;
 }
 
 function parseImmediateOperand(text) {
     var match = /^#(.+)$/.exec(String(text || '').trim());
-    if (!match)
+    if (!match) {
         return null;
+    }
     return parseImmediateLiteral(match[1]);
 }
 
@@ -752,12 +835,14 @@ function concatBytes(parts) {
     var out;
     var offset = 0;
 
-    for (i = 0; i < parts.length; ++i)
+    for (i = 0; i < parts.length; ++i) {
         total += parts[i].length;
+    }
     out = new Uint8Array(total);
     for (i = 0; i < parts.length; ++i) {
-        for (j = 0; j < parts[i].length; ++j)
+        for (j = 0; j < parts[i].length; ++j) {
             out[offset + j] = parts[i][j];
+        }
         offset += parts[i].length;
     }
     return out;
@@ -780,16 +865,18 @@ function encodeWords(words) {
 }
 
 function appendEa(parts, ea) {
-    if (ea.extWords && ea.extWords.length)
+    if (ea.extWords && ea.extWords.length) {
         parts.push(encodeWords(ea.extWords));
+    }
     return concatBytes(parts);
 }
 
 function parseIndexRegister(text) {
     var match = /^([ad])([0-7])(?:\.(w|l))?$/i.exec(String(text || '').trim());
 
-    if (!match)
+    if (!match) {
         return null;
+    }
     return {
         isAddress: match[1].toLowerCase() === 'a',
         reg: parseInt(match[2], 10) & 7,
@@ -813,23 +900,27 @@ function parseRegisterMask(text) {
     }
 
     for (i = 0; i < parts.length; ++i) {
-        if (parts[i] === '')
+        if (parts[i] === '') {
             continue;
+        }
         range = /^([da])([0-7])\-([da])([0-7])$/i.exec(parts[i]);
         if (range) {
             startKind = range[1].toLowerCase();
             startIndex = parseInt(range[2], 10) & 7;
             endKind = range[3].toLowerCase();
             endIndex = parseInt(range[4], 10) & 7;
-            if (startKind !== endKind || endIndex < startIndex)
+            if (startKind !== endKind || endIndex < startIndex) {
                 throw new Error('invalid register mask: ' + text);
-            for (j = startIndex; j <= endIndex; ++j)
+            }
+            for (j = startIndex; j <= endIndex; ++j) {
                 mask |= 1 << regBit(startKind, j);
+            }
             continue;
         }
         range = /^([da])([0-7])$/i.exec(parts[i]);
-        if (!range)
+        if (!range) {
             throw new Error('invalid register mask: ' + text);
+        }
         mask |= 1 << regBit(range[1].toLowerCase(), parseInt(range[2], 10) & 7);
     }
 
@@ -847,41 +938,50 @@ function parseEaOperand(text, size, allowImmediate) {
     var index;
     var disp;
 
-    if (operand === '')
+    if (operand === '') {
         throw new Error('Syntax Error');
+    }
 
     reg = parseRegister(operand, 'd');
-    if (reg !== null)
+    if (reg !== null) {
         return { mode: 0, reg: reg, extWords: [], kind: 'dn' };
+    }
 
     reg = parseRegister(operand, 'a');
-    if (reg !== null)
+    if (reg !== null) {
         return { mode: 1, reg: reg, extWords: [], kind: 'an' };
+    }
 
     match = /^\((a[0-7])\)$/i.exec(operand);
-    if (match)
+    if (match) {
         return { mode: 2, reg: parseRegister(match[1], 'a'), extWords: [], kind: 'mem' };
+    }
 
     match = /^\((a[0-7])\)\+$/i.exec(operand);
-    if (match)
+    if (match) {
         return { mode: 3, reg: parseRegister(match[1], 'a'), extWords: [], kind: 'mem' };
+    }
 
     match = /^-\((a[0-7])\)$/i.exec(operand);
-    if (match)
+    if (match) {
         return { mode: 4, reg: parseRegister(match[1], 'a'), extWords: [], kind: 'mem' };
+    }
 
     if (/^#/.test(operand)) {
-        if (allowImmediate === false)
+        if (allowImmediate === false) {
             throw new Error('Illegal Instruction');
+        }
         value = parseImmediateLiteral(operand.slice(1));
-        if (size === 'l')
+        if (size === 'l') {
             return { mode: 7, reg: 4, extWords: [ (value >>> 16) & 0xffff, value & 0xffff ], kind: 'imm' };
+        }
         return { mode: 7, reg: 4, extWords: [ size === 'b' ? (value & 0xff) : (value & 0xffff) ], kind: 'imm' };
     }
 
     inner = operand;
-    if (/^\(.*\)$/.test(operand) && operand.indexOf(',') !== -1 && !/^\((a[0-7])\)$/i.test(operand))
+    if (/^\(.*\)$/.test(operand) && operand.indexOf(',') !== -1 && !/^\((a[0-7])\)$/i.test(operand)) {
         inner = operand.slice(1, -1);
+    }
     parts = splitOperands(inner);
     if (parts.length === 2) {
         baseReg = parseRegister(parts[1], 'a');
@@ -904,11 +1004,13 @@ function parseEaOperand(text, size, allowImmediate) {
     if (match) {
         disp = parseImmediateLiteral(match[1]);
         baseReg = parseRegister(match[2], 'a');
-        if (!match[3])
+        if (!match[3]) {
             return { mode: 5, reg: baseReg, extWords: [ disp & 0xffff ], kind: 'mem' };
+        }
         index = parseIndexRegister(match[3]);
-        if (!index)
+        if (!index) {
             throw new Error('Syntax Error');
+        }
         value = (index.isAddress ? 0x8000 : 0) | ((index.reg & 7) << 12) | (index.long ? 0x0800 : 0) | (disp & 0xff);
         return { mode: 6, reg: baseReg, extWords: [ value & 0xffff ], kind: 'mem' };
     }
@@ -923,8 +1025,9 @@ function parseEaOperand(text, size, allowImmediate) {
 
     value = numericValue(operand);
     if (value !== null) {
-        if (value <= 0xffff)
+        if (value <= 0xffff) {
             return { mode: 7, reg: 0, extWords: [ value & 0xffff ], kind: 'mem' };
+        }
         return { mode: 7, reg: 1, extWords: [ (value >>> 16) & 0xffff, value & 0xffff ], kind: 'mem' };
     }
 
@@ -934,8 +1037,9 @@ function parseEaOperand(text, size, allowImmediate) {
 function encodeMoveInstruction(size, src, dst) {
     var sizeNibble = { b: 0x1000, l: 0x2000, w: 0x3000 }[size];
 
-    if (!sizeNibble)
+    if (!sizeNibble) {
         throw new Error('Illegal Instruction');
+    }
     return appendEa([
         encodeWord(sizeNibble | ((dst.reg & 7) << 9) | ((dst.mode & 7) << 6) | ((src.mode & 7) << 3) | (src.reg & 7))
     ], {
@@ -947,8 +1051,9 @@ function encodeUnaryEa(baseBySize, size, operand) {
     var ea = parseEaOperand(operand, size, false);
     var base = baseBySize[size];
 
-    if (base === undefined)
+    if (base === undefined) {
         throw new Error('Illegal Instruction');
+    }
     return appendEa([ encodeWord(base | ((ea.mode & 7) << 3) | (ea.reg & 7)) ], ea);
 }
 
@@ -959,8 +1064,9 @@ function encodeConditionMnemonic(mnemonic) {
         sge: 0xc, slt: 0xd, sgt: 0xe, sle: 0xf
     };
 
-    if (!Object.prototype.hasOwnProperty.call(map, mnemonic))
+    if (!Object.prototype.hasOwnProperty.call(map, mnemonic)) {
         throw new Error('Illegal Instruction');
+    }
     return map[mnemonic];
 }
 
@@ -971,14 +1077,17 @@ function encodeQuickInstruction(mnemonic, size, immText, dstText) {
     var data;
     var base;
 
-    if (sizeCode === undefined)
+    if (sizeCode === undefined) {
         throw new Error('Illegal Instruction');
-    if (imm < 1 || imm > 8)
+    }
+    if (imm < 1 || imm > 8) {
         throw new Error('Syntax Error');
+    }
     data = imm === 8 ? 0 : imm;
     ea = parseEaOperand(dstText, size, false);
-    if (ea.mode === 1 && size === 'b')
+    if (ea.mode === 1 && size === 'b') {
         throw new Error('Illegal Instruction');
+    }
     base = mnemonic === 'subq' ? 0x5100 : 0x5000;
     return appendEa([ encodeWord(base | ((data & 7) << 9) | (sizeCode << 6) | ((ea.mode & 7) << 3) | (ea.reg & 7)) ], ea);
 }
@@ -990,34 +1099,42 @@ function encodeImmediateInstruction(mnemonic, size, immText, dstText) {
     var dst;
     var parts;
 
-    if (familyBase === undefined || sizeBase === undefined)
+    if (familyBase === undefined || sizeBase === undefined) {
         throw new Error('Illegal Instruction');
+    }
 
     if (dstText.toLowerCase() === 'ccr') {
-        if (mnemonic === 'ori')
+        if (mnemonic === 'ori') {
             return concatBytes([ encodeWord(0x003c), encodeWord(imm & 0xff) ]);
-        if (mnemonic === 'andi')
+        }
+        if (mnemonic === 'andi') {
             return concatBytes([ encodeWord(0x023c), encodeWord(imm & 0xff) ]);
-        if (mnemonic === 'eori')
+        }
+        if (mnemonic === 'eori') {
             return concatBytes([ encodeWord(0x0a3c), encodeWord(imm & 0xff) ]);
+        }
         throw new Error('Illegal Instruction');
     }
     if (dstText.toLowerCase() === 'sr') {
-        if (mnemonic === 'ori')
+        if (mnemonic === 'ori') {
             return concatBytes([ encodeWord(0x007c), encodeWord(imm & 0xffff) ]);
-        if (mnemonic === 'andi')
+        }
+        if (mnemonic === 'andi') {
             return concatBytes([ encodeWord(0x027c), encodeWord(imm & 0xffff) ]);
-        if (mnemonic === 'eori')
+        }
+        if (mnemonic === 'eori') {
             return concatBytes([ encodeWord(0x0a7c), encodeWord(imm & 0xffff) ]);
+        }
         throw new Error('Illegal Instruction');
     }
 
     dst = parseEaOperand(dstText, size, false);
     parts = [ encodeWord(familyBase | sizeBase | ((dst.mode & 7) << 3) | (dst.reg & 7)) ];
-    if (size === 'l')
+    if (size === 'l') {
         parts.push(encodeLong(imm));
-    else
+    }  else {
         parts.push(encodeWord(size === 'b' ? (imm & 0xff) : (imm & 0xffff)));
+    }
     return appendEa(parts, dst);
 }
 
@@ -1042,19 +1159,20 @@ function encodeAddSubLogic(mnemonic, size, srcText, dstText) {
     var srcAn = parseRegister(srcText, 'a');
     var baseMap = { add: 0xd000, sub: 0x9000, and: 0xc000, or: 0x8000, cmp: 0xb000, eor: 0xb000 };
 
+    var immediateMnemonicMap = {
+        cmp: 'cmpi',
+        add: 'addi',
+        sub: 'subi',
+        and: 'andi',
+        or:  'ori',
+        eor: 'eori'
+    };
+
     if (parseImmediateOperand(srcText) !== null) {
-        if (mnemonic === 'cmp')
-            return encodeImmediateInstruction('cmpi', size, srcText, dstText);
-        if (mnemonic === 'add')
-            return encodeImmediateInstruction('addi', size, srcText, dstText);
-        if (mnemonic === 'sub')
-            return encodeImmediateInstruction('subi', size, srcText, dstText);
-        if (mnemonic === 'and')
-            return encodeImmediateInstruction('andi', size, srcText, dstText);
-        if (mnemonic === 'or')
-            return encodeImmediateInstruction('ori', size, srcText, dstText);
-        if (mnemonic === 'eor')
-            return encodeImmediateInstruction('eori', size, srcText, dstText);
+        var immediateMnemonic = immediateMnemonicMap[mnemonic];
+        if (immediateMnemonic) {
+            return encodeImmediateInstruction(immediateMnemonic, size, srcText, dstText);
+        }
     }
 
     if (mnemonic === 'cmp' && /^\(a[0-7]\)\+$/i.test(srcText) && /^\(a[0-7]\)\+$/i.test(dstText)) {
@@ -1072,14 +1190,18 @@ function encodeAddSubLogic(mnemonic, size, srcText, dstText) {
             encodeWord((mnemonic === 'add' ? 0xd0c0 : 0x90c0) | ((dstAn & 7) << 9) | (size === 'l' ? 0x0100 : 0x0000) | ((parseEaOperand(srcText, size === 'l' ? 'l' : 'w', true).mode & 7) << 3) | (parseEaOperand(srcText, size === 'l' ? 'l' : 'w', true).reg & 7))
         ], parseEaOperand(srcText, size === 'l' ? 'l' : 'w', true));
 
-    if (dstDn !== null && mnemonic !== 'eor')
+    if (dstDn !== null && mnemonic !== 'eor') {
         return encodeEaToDn(baseMap[mnemonic], size, dstDn, srcText);
-    if (mnemonic === 'cmp' && dstDn !== null)
+    }
+    if (mnemonic === 'cmp' && dstDn !== null) {
         return encodeEaToDn(baseMap[mnemonic], size, dstDn, srcText);
-    if (srcDn !== null)
+    }
+    if (srcDn !== null) {
         return encodeDnToEa(baseMap[mnemonic], size, srcDn, dstText);
-    if (srcAn !== null && (mnemonic === 'add' || mnemonic === 'sub') && dstAn !== null)
+    }
+    if (srcAn !== null && (mnemonic === 'add' || mnemonic === 'sub') && dstAn !== null) {
         return appendEa([ encodeWord((mnemonic === 'add' ? 0xd0c0 : 0x90c0) | ((dstAn & 7) << 9) | (size === 'l' ? 0x0100 : 0x0000) | (1 << 3) | (srcAn & 7)) ], { extWords: [] });
+    }
 
     throw new Error('Illegal Instruction');
 }
@@ -1089,8 +1211,9 @@ function encodeChkMulDiv(mnemonic, srcText, dstText) {
     var src = parseEaOperand(srcText, mnemonic === 'chk' ? 'w' : 'w', true);
     var base = { chk: 0x4180, divu: 0x80c0, divs: 0x81c0, mulu: 0xc0c0, muls: 0xc1c0 }[mnemonic];
 
-    if (dst === null || base === undefined)
+    if (dst === null || base === undefined) {
         throw new Error('Illegal Instruction');
+    }
     return appendEa([ encodeWord(base | ((dst & 7) << 9) | ((src.mode & 7) << 3) | (src.reg & 7)) ], src);
 }
 
@@ -1116,14 +1239,16 @@ function encodeMoveSpecial(cleaned, mnemonic, size, operands) {
         }
         if (srcText.toLowerCase() === 'usp') {
             reg = parseRegister(dstText, 'a');
-            if (reg === null)
+            if (reg === null) {
                 throw new Error('Illegal Instruction');
+            }
             return encodeWord(0x4e68 | reg);
         }
         if (dstText.toLowerCase() === 'usp') {
             reg = parseRegister(srcText, 'a');
-            if (reg === null)
+            if (reg === null) {
                 throw new Error('Illegal Instruction');
+            }
             return encodeWord(0x4e60 | reg);
         }
         return encodeMoveInstruction(size || 'w', parseEaOperand(srcText, size || 'w', true), parseEaOperand(dstText, size || 'w', false));
@@ -1132,8 +1257,9 @@ function encodeMoveSpecial(cleaned, mnemonic, size, operands) {
     if (mnemonic === 'movea') {
         reg = parseRegister(dstText, 'a');
         src = parseEaOperand(srcText, size || 'w', true);
-        if (reg === null)
+        if (reg === null) {
             throw new Error('Illegal Instruction');
+        }
         return appendEa([ encodeWord((size === 'l' ? 0x2040 : 0x3040) | ((reg & 7) << 9) | ((src.mode & 7) << 3) | (src.reg & 7)) ], src);
     }
 
@@ -1150,23 +1276,26 @@ function encodeShiftRotateInstruction(mnemonic, size, operands) {
     var word;
 
     if (!size) {
-        if (dst.mode === 0 || dst.mode === 1)
+        if (dst.mode === 0 || dst.mode === 1) {
             throw new Error('Illegal Instruction');
+        }
         word = 0xe0c0 | (kind << 9) | (left ? 0x0100 : 0x0000) | ((dst.mode & 7) << 3) | (dst.reg & 7);
         return appendEa([ encodeWord(word) ], dst);
     }
 
     sizeCode = { b: 0, w: 1, l: 2 }[size];
-    if (sizeCode === undefined || dst.mode !== 0)
+    if (sizeCode === undefined || dst.mode !== 0) {
         throw new Error('Illegal Instruction');
+    }
     countReg = parseRegister(operands[0], 'd');
     if (countReg !== null) {
         word = 0xe020 | ((countReg & 7) << 9) | (left ? 0x0100 : 0x0000) | (sizeCode << 6) | (1 << 5) | (kind << 3) | (dst.reg & 7);
         return encodeWord(word);
     }
     countImm = signed32(parseImmediateOperand(operands[0]));
-    if (countImm < 1 || countImm > 8)
+    if (countImm < 1 || countImm > 8) {
         throw new Error('Syntax Error');
+    }
     word = 0xe000 | (((countImm & 7) === 8 ? 0 : (countImm & 7)) << 9) | (left ? 0x0100 : 0x0000) | (sizeCode << 6) | (kind << 3) | (dst.reg & 7);
     return encodeWord(word);
 }
@@ -1179,11 +1308,13 @@ function encodeBitInstruction(mnemonic, operands) {
     var imm;
     var parts;
 
-    if (reg !== null)
+    if (reg !== null) {
         return appendEa([ encodeWord(baseReg | ((reg & 7) << 9) | ((dst.mode & 7) << 3) | (dst.reg & 7)) ], dst);
+    }
     imm = parseImmediateOperand(operands[0]);
-    if (imm === null)
+    if (imm === null) {
         throw new Error('Syntax Error');
+    }
     parts = [ encodeWord(baseImm | ((dst.mode & 7) << 3) | (dst.reg & 7)), encodeWord(imm & 0xffff) ];
     return appendEa(parts, dst);
 }
@@ -1206,16 +1337,19 @@ function assembleManual(address, line) {
     var dstReg;
     var target;
 
-    if (/^nop$/i.test(cleaned))
+    if (/^nop$/i.test(cleaned)) {
         return encodeWord(0x4e71);
-    if (/^rts$/i.test(cleaned))
+    }
+    if (/^rts$/i.test(cleaned)) {
         return encodeWord(0x4e75);
+    }
 
     match = /^trap\s+#(.+)$/i.exec(cleaned);
     if (match) {
         imm = parseImmediateLiteral(match[1]);
-        if (imm > 15)
+        if (imm > 15) {
             throw new Error('trap vector out of range');
+        }
         return encodeWord(0x4e40 | (imm & 0x0f));
     }
 
@@ -1223,8 +1357,9 @@ function assembleManual(address, line) {
     if (match) {
         reg = parseRegister(match[2], 'd');
         imm = signed32(parseImmediateOperand(match[1]));
-        if (imm < -128 || imm > 127)
+        if (imm < -128 || imm > 127) {
             throw new Error('moveq immediate out of range');
+        }
         return encodeWord(0x7000 | (reg << 9) | (imm & 0xff));
     }
 
@@ -1232,8 +1367,9 @@ function assembleManual(address, line) {
     if (match) {
         areg = parseRegister(match[2], 'a');
         imm = parseImmediateOperand(match[1]);
-        if (imm === null)
+        if (imm === null) {
             throw new Error('invalid movea immediate');
+        }
         return concatBytes([ encodeWord(0x207c | (areg << 9)), encodeLong(imm) ]);
     }
 
@@ -1242,16 +1378,20 @@ function assembleManual(address, line) {
         imm = parseImmediateOperand(match[3]);
         reg = parseRegister(match[4], 'd');
         areg = parseRegister(match[4], 'a');
-        if (imm === null || imm < 1 || imm > 8)
+        if (imm === null || imm < 1 || imm > 8) {
             throw new Error('quick immediate out of range');
-        if (imm === 8)
+        }
+        if (imm === 8) {
             imm = 0;
+        }
         sizeCode = { b: 0, w: 1, l: 2 }[match[2].toLowerCase()];
-        if (reg !== null)
+        if (reg !== null) {
             return encodeWord((match[1].toLowerCase() === 'subq' ? 0x5100 : 0x5000) | (imm << 9) | (sizeCode << 6) | reg);
+        }
         if (areg !== null) {
-            if (sizeCode === 0)
+            if (sizeCode === 0) {
                 throw new Error('address-register quick byte size is invalid');
+            }
             return encodeWord((match[1].toLowerCase() === 'subq' ? 0x5100 : 0x5000) | (imm << 9) | (sizeCode << 6) | (1 << 3) | areg);
         }
     }
@@ -1261,10 +1401,12 @@ function assembleManual(address, line) {
         reg = parseRegister(match[3], 'd');
         imm = parseImmediateOperand(match[2]);
         sizeCode = { b: 0, w: 1, l: 2 }[match[1].toLowerCase()];
-        if (sizeCode === 0)
+        if (sizeCode === 0) {
             return concatBytes([ encodeWord(0x0c00 | reg), encodeWord(imm & 0xff) ]);
-        if (sizeCode === 1)
+        }
+        if (sizeCode === 1) {
             return concatBytes([ encodeWord(0x0c40 | reg), encodeWord(imm & 0xffff) ]);
+        }
         return concatBytes([ encodeWord(0x0c80 | reg), encodeLong(imm) ]);
     }
 
@@ -1344,14 +1486,16 @@ function assembleManual(address, line) {
     }
 
     match = /^([a-z]+)(?:\.(b|w|l))?(?:\s+(.*))?$/i.exec(cleaned);
-    if (!match)
+    if (!match) {
         return null;
+    }
     operands = splitOperands(match[3] || '');
     switch (match[1].toLowerCase()) {
         case 'move':
         case 'movea':
-            if (operands.length === 2)
+            if (operands.length === 2) {
                 return encodeMoveSpecial(cleaned, match[1].toLowerCase(), (match[2] || '').toLowerCase(), operands);
+            }
             break;
         case 'addi':
         case 'andi':
@@ -1359,13 +1503,15 @@ function assembleManual(address, line) {
         case 'eori':
         case 'ori':
         case 'subi':
-            if (operands.length === 2)
+            if (operands.length === 2) {
                 return encodeImmediateInstruction(match[1].toLowerCase(), (match[2] || 'w').toLowerCase(), operands[0], operands[1]);
+            }
             break;
         case 'addq':
         case 'subq':
-            if (operands.length === 2)
+            if (operands.length === 2) {
                 return encodeQuickInstruction(match[1].toLowerCase(), (match[2] || 'w').toLowerCase(), operands[0], operands[1]);
+            }
             break;
         case 'add':
         case 'sub':
@@ -1373,8 +1519,9 @@ function assembleManual(address, line) {
         case 'or':
         case 'eor':
         case 'cmp':
-            if (operands.length === 2)
+            if (operands.length === 2) {
                 return encodeAddSubLogic(match[1].toLowerCase(), (match[2] || 'w').toLowerCase(), operands[0], operands[1]);
+            }
             break;
         case 'cmpm':
             if (operands.length === 2 && /^\(a[0-7]\)\+$/i.test(operands[0]) && /^\(a[0-7]\)\+$/i.test(operands[1])) {
@@ -1413,8 +1560,9 @@ function assembleManual(address, line) {
         case 'divs':
         case 'mulu':
         case 'muls':
-            if (operands.length === 2)
+            if (operands.length === 2) {
                 return encodeChkMulDiv(match[1].toLowerCase(), operands[0], operands[1]);
+            }
             break;
         case 'nbcd':
             return encodeUnaryEa({ b: 0x4800 }, 'b', operands[0]);
@@ -1435,8 +1583,9 @@ function assembleManual(address, line) {
             var leaReg = parseRegister(operands[1], 'a');
             if (leaReg !== null && isLabelName(operands[0])) {
                 var leaLabelValue = symbolValue(operands[0]);
-                if (leaLabelValue === null)
+                if (leaLabelValue === null) {
                     leaLabelValue = 0;
+                }
                 return concatBytes([
                     encodeWord(0x41fa | ((leaReg & 7) << 9)),
                     encodeWord((leaLabelValue - ((address + 2) >>> 0)) & 0xffff)
@@ -1453,29 +1602,34 @@ function assembleManual(address, line) {
             return appendEa([ encodeWord((match[1].toLowerCase() === 'jsr' ? 0x4e80 : 0x4ec0) | ((jumpEa.mode & 7) << 3) | (jumpEa.reg & 7)) ], jumpEa);
         case 'swap':
             reg = parseRegister(operands[0], 'd');
-            if (reg !== null)
+            if (reg !== null) {
                 return encodeWord(0x4840 | reg);
+            }
             break;
         case 'ext':
             reg = parseRegister(operands[0], 'd');
-            if (reg !== null)
+            if (reg !== null) {
                 return encodeWord(((match[2] || 'w').toLowerCase() === 'l' ? 0x48c0 : 0x4880) | reg);
+            }
             break;
         case 'link':
             reg = parseRegister(operands[0], 'a');
             imm = parseImmediateOperand(operands[1]);
-            if (reg !== null && imm !== null)
+            if (reg !== null && imm !== null) {
                 return concatBytes([ encodeWord(0x4e50 | reg), encodeWord(imm & 0xffff) ]);
+            }
             break;
         case 'unlk':
             reg = parseRegister(operands[0], 'a');
-            if (reg !== null)
+            if (reg !== null) {
                 return encodeWord(0x4e58 | reg);
+            }
             break;
         case 'stop':
             imm = parseImmediateOperand(operands[0]);
-            if (imm !== null)
+            if (imm !== null) {
                 return concatBytes([ encodeWord(0x4e72), encodeWord(imm & 0xffff) ]);
+            }
             break;
         case 'reset':
             return encodeWord(0x4e70);
@@ -1496,14 +1650,17 @@ function assembleManual(address, line) {
                 var dispMatch = /^\(([^,]+),(a[0-7])\)$/i.exec(mem);
                 var addrReg;
                 var dispValue;
-                if (!dispMatch)
+                if (!dispMatch) {
                     throw new Error('Syntax Error');
+                }
                 addrReg = parseRegister(dispMatch[2], 'a');
                 dispValue = parseImmediateLiteral(dispMatch[1]);
-                if (left !== null)
+                if (left !== null) {
                     return concatBytes([ encodeWord(0x0188 | (left << 9) | (((match[2] || 'w').toLowerCase() === 'l' ? 7 : 6) << 6) | addrReg), encodeWord(dispValue & 0xffff) ]);
-                if (right !== null)
+                }
+                if (right !== null) {
                     return concatBytes([ encodeWord(0x0108 | (right << 9) | (((match[2] || 'w').toLowerCase() === 'l' ? 5 : 4) << 6) | addrReg), encodeWord(dispValue & 0xffff) ]);
+                }
             }
             break;
         case 'movem':
@@ -1521,14 +1678,18 @@ function assembleManual(address, line) {
                 var d2 = parseRegister(operands[1], 'd');
                 var a1 = parseRegister(operands[0], 'a');
                 var a2 = parseRegister(operands[1], 'a');
-                if (d1 !== null && d2 !== null)
+                if (d1 !== null && d2 !== null) {
                     return encodeWord(0xc140 | (d1 << 9) | d2);
-                if (a1 !== null && a2 !== null)
+                }
+                if (a1 !== null && a2 !== null) {
                     return encodeWord(0xc148 | (a1 << 9) | a2);
-                if (d1 !== null && a2 !== null)
+                }
+                if (d1 !== null && a2 !== null) {
                     return encodeWord(0xc188 | (d1 << 9) | a2);
-                if (a1 !== null && d2 !== null)
+                }
+                if (a1 !== null && d2 !== null) {
                     return encodeWord(0xc188 | (d2 << 9) | a1);
+                }
             }
             break;
         case 'asl':
@@ -1578,22 +1739,28 @@ function assembleLine(address, line) {
     var branchBytes;
     var dbraBytes;
     var manualBytes;
-    if (cleaned === '')
+    if (cleaned === '') {
         return null;
+    }
     validateLine(cleaned);
-    if (/^dc\.[bwl]\b/i.test(cleaned))
+    if (/^dc\.[bwl]\b/i.test(cleaned)) {
         return parseDcDirective(cleaned);
-    if (mnemonicOf(cleaned) === 'monitor')
+    }
+    if (mnemonicOf(cleaned) === 'monitor') {
         return Uint8Array.from([ 0xa0, 0x00 ]);
+    }
     branchBytes = assembleBranch(address >>> 0, cleaned);
-    if (branchBytes)
+    if (branchBytes) {
         return branchBytes;
+    }
     dbraBytes = assembleDbra(address >>> 0, cleaned);
-    if (dbraBytes)
+    if (dbraBytes) {
         return dbraBytes;
+    }
     manualBytes = assembleManual(address >>> 0, cleaned);
-    if (manualBytes)
+    if (manualBytes) {
         return manualBytes;
+    }
     throw new Error('Illegal Instruction');
 }
 
@@ -1608,8 +1775,9 @@ function collectSourceEntries(address, text) {
         var cleaned = cleanLine(lines[i]);
         var parsed;
         var match;
-        if (cleaned === '')
+        if (cleaned === '') {
             continue;
+        }
         if (firstLine) {
             match = /^a\s+(\$[0-9a-f]+|(0x)?[0-9a-f]+)$/i.exec(cleaned);
             if (match) {
@@ -1669,8 +1837,9 @@ function assembleText(address, text) {
     currentSymbols = labels;
     try {
         for (i = 0; i < collected.entries.length; ++i) {
-            if (collected.entries[i].instruction)
+            if (collected.entries[i].instruction) {
                 validateLine(collected.entries[i].instruction);
+            }
         }
 
         for (i = 0; i < collected.entries.length; ++i) {
@@ -1681,27 +1850,31 @@ function assembleText(address, text) {
 
             if (entry.directive === 'org') {
                 value = parseAddressLiteral(entry.expression) >>> 0;
-                if (i === 0)
+                if (i === 0) {
                     collected.baseAddress = value >>> 0;
+                }
                 pc = value >>> 0;
                 continue;
             }
 
             if (entry.directive === 'equ') {
-                if (Object.prototype.hasOwnProperty.call(labels, entry.name))
+                if (Object.prototype.hasOwnProperty.call(labels, entry.name)) {
                     throw new Error('duplicate symbol: ' + entry.name);
+                }
                 labels[entry.name] = parseImmediateLiteral(entry.expression) >>> 0;
                 continue;
             }
 
             if (entry.label) {
-                if (Object.prototype.hasOwnProperty.call(labels, entry.label))
+                if (Object.prototype.hasOwnProperty.call(labels, entry.label)) {
                     throw new Error('duplicate label: ' + entry.label);
+                }
                 labels[entry.label] = pc >>> 0;
             }
 
-            if (!entry.instruction)
+            if (!entry.instruction) {
                 continue;
+            }
 
             entry.address = pc >>> 0;
             resolved = resolveLabelReference(entry.address, entry.instruction, labels, true);
@@ -1722,19 +1895,23 @@ function assembleText(address, text) {
                 continue;
             }
 
-            if (finalEntry.directive === 'equ')
+            if (finalEntry.directive === 'equ') {
                 continue;
+            }
 
             finalEntry.address = pc >>> 0;
 
-            if (!finalEntry.instruction)
+            if (!finalEntry.instruction) {
                 continue;
+            }
 
             finalBytes = assembleLine(finalEntry.address, resolveLabelReference(finalEntry.address, finalEntry.instruction, labels, false));
-            if (!finalBytes)
+            if (!finalBytes) {
                 continue;
-            for (j = 0; j < finalBytes.length; ++j)
+            }
+            for (j = 0; j < finalBytes.length; ++j) {
                 output.push(finalBytes[j]);
+            }
             pc = (pc + finalBytes.length) >>> 0;
         }
 
@@ -1773,8 +1950,9 @@ function createSession(machine, address, helpers) {
                     exitMode: true
                 };
             }
-            for (i = 0; i < bytes.length; ++i)
+            for (i = 0; i < bytes.length; ++i) {
                 machine.write8(pc + i, bytes[i]);
+            }
             pc = (pc + bytes.length) >>> 0;
             return {
                 suppressPrompt: true
