@@ -32,15 +32,18 @@ function firstTool(candidates) {
     return '';
 }
 
+var toolPrefixes = [
+    'm68k-amigaos',
+    'm68k-none-elf',
+    'm68k-unknown-elf',
+    'm68k-linux-gnu',
+    'm68k-elf'
+];
+
 function candidateToolchains(tool) {
-    return [
-        `m68k-amigaos-${tool}`,
-        `/opt/amiga/bin/m68k-amigaos-${tool}`,
-        `m68k-none-elf-${tool}`,
-        `m68k-unknown-elf-${tool}`,
-        `m68k-linux-gnu-${tool}`,
-        `m68k-elf-${tool}`
-    ];
+    return toolPrefixes.map(function (prefix) {
+        return prefix + '-' + tool;
+    });
 }
 
 function resolveToolchain() {
