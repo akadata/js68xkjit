@@ -32,61 +32,21 @@ function firstTool(candidates) {
     return '';
 }
 
-function candidateAssemblers() {
+function candidateToolchains(tool) {
     return [
-        'm68k-amigaos-as',
-        '/opt/amiga/bin/m68k-amigaos-as',
-        'm68k-none-elf-as',
-        'm68k-unknown-elf-as',
-        'm68k-linux-gnu-as',
-        'm68k-elf-as'
-    ];
-}
-
-function candidateObjcopy() {
-    return [
-        'm68k-amigaos-objcopy',
-        '/opt/amiga/bin/m68k-amigaos-objcopy',
-        'm68k-none-elf-objcopy',
-        'm68k-unknown-elf-objcopy',
-        'm68k-linux-gnu-objcopy',
-        'm68k-elf-objcopy'
-    ];
-}
-
-function candidateToolchains() {
-    return [
-        {
-            assembler: 'm68k-amigaos-as',
-            objcopy: 'm68k-amigaos-objcopy'
-        },
-        {
-            assembler: '/opt/amiga/bin/m68k-amigaos-as',
-            objcopy: '/opt/amiga/bin/m68k-amigaos-objcopy'
-        },
-        {
-            assembler: 'm68k-none-elf-as',
-            objcopy: 'm68k-none-elf-objcopy'
-        },
-        {
-            assembler: 'm68k-unknown-elf-as',
-            objcopy: 'm68k-unknown-elf-objcopy'
-        },
-        {
-            assembler: 'm68k-linux-gnu-as',
-            objcopy: 'm68k-linux-gnu-objcopy'
-        },
-        {
-            assembler: 'm68k-elf-as',
-            objcopy: 'm68k-elf-objcopy'
-        }
+        `m68k-amigaos-${tool}`,
+        `/opt/amiga/bin/m68k-amigaos-${tool}`,
+        `m68k-none-elf-${tool}`,
+        `m68k-unknown-elf-${tool}`,
+        `m68k-linux-gnu-${tool}`,
+        `m68k-elf-${tool}`
     ];
 }
 
 function resolveToolchain() {
     return {
-        assembler: process.env.M68K_AS || firstTool(candidateAssemblers()),
-        objcopy: process.env.M68K_OBJCOPY || firstTool(candidateObjcopy())
+        assembler: process.env.M68K_AS || firstTool(candidateToolchains('as')),
+        objcopy: process.env.M68K_OBJCOPY || firstTool(candidateToolchains('objcopy'))
     };
 }
 
@@ -102,11 +62,13 @@ function resolvedToolchainCandidates() {
         var objcopy = objcopyName ? tool(objcopyName) : '';
         var key;
 
-        if (!assembler || !objcopy)
+        if (!assembler || !objcopy) {
             return;
+        }
         key = assembler + '|' + objcopy;
-        if (seen[key])
+        if (seen[key]) {
             return;
+        }
         seen[key] = true;
         list.push({
             assembler: assembler,
@@ -149,15 +111,17 @@ function asFlagForCpu(cpuType) {
 
 function summarizeExecError(error) {
     var stderr = String((error && error.stderr) || '').split('\n').filter(Boolean);
-    if (stderr.length === 0)
+    if (stderr.length === 0) {
         return error && error.message ? error.message : 'assembler failed';
+    }
     return stderr[stderr.length - 1].replace(/^.*Error:\s*/, '');
 }
 
 function ensureToolchain(errorMessage) {
     var resolved = resolveToolchain();
-    if (!resolved.assembler || !resolved.objcopy)
+    if (!resolved.assembler || !resolved.objcopy) {
         throw new Error(errorMessage || 'm68k assembler/objcopy are required');
+    }
     return resolved;
 }
 
@@ -172,8 +136,9 @@ function generatedRoot() {
 function normalizedRelativeSource(sourceFile) {
     var sourcePath = path.resolve(sourceFile);
     var relative = path.relative(repoRoot(), sourcePath);
-    if (relative.indexOf('..') === 0)
+    if (relative.indexOf('..') === 0) {
         relative = path.basename(sourcePath);
+    }
     return relative.replace(/\\/g, '/');
 }
 
@@ -203,10 +168,12 @@ function buildBinaryFile(sourceFile, binaryFile, cpuType, errorMessage, options)
 
     options = options || {};
     ensureDirectory(binaryFile);
-    if (candidates.length === 0)
+    if (candidates.length === 0) {
         throw new Error(errorMessage || 'm68k assembler/objcopy are required');
-    if (!options.omitCpuFlag)
+    }
+    if (!options.omitCpuFlag) {
         args.push(asFlagForCpu(cpuType));
+    }
     args.push('-o', objectFile, path.resolve(sourceFile));
 
     for (i = 0; i < candidates.length; ++i) {
@@ -241,10 +208,12 @@ function assembleToBinaryCached(sourceFile, cpuType, options, errorMessage) {
     binaryFile = options.outputFile || generatedBinaryPath(sourceFile, cpuType, options);
     key = buildKey(sourceFile, cpuType, options, binaryFile);
 
-    if (!options.forceRebuild && fs.existsSync(binaryFile))
+    if (!options.forceRebuild && fs.existsSync(binaryFile)) {
         return new Uint8Array(fs.readFileSync(binaryFile));
-    if (options.forceRebuild && rebuiltInProcess[key] && fs.existsSync(binaryFile))
+    }
+    if (options.forceRebuild && rebuiltInProcess[key] && fs.existsSync(binaryFile)) {
         return new Uint8Array(fs.readFileSync(binaryFile));
+    }
 
     buildBinaryFile(sourceFile, binaryFile, cpuType, errorMessage, options);
     rebuiltInProcess[key] = true;
