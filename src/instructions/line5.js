@@ -21,22 +21,54 @@ exports.decode = function (cpu, pc, inst) {
         data = 8;
 
     switch (cond) {
-        case 0: condCode = 'true'; break;
-        case 1: condCode = 'false'; break;
-        case 2: condCode = '(!c.cc&&!c.cz)'; break;
-        case 3: condCode = '(c.cc||c.cz)'; break;
-        case 4: condCode = '!c.cc'; break;
-        case 5: condCode = 'c.cc'; break;
-        case 6: condCode = '!c.cz'; break;
-        case 7: condCode = 'c.cz'; break;
-        case 8: condCode = '!c.cv'; break;
-        case 9: condCode = 'c.cv'; break;
-        case 10: condCode = '!c.cn'; break;
-        case 11: condCode = 'c.cn'; break;
-        case 12: condCode = '(c.cn===c.cv)'; break;
-        case 13: condCode = '(c.cn!==c.cv)'; break;
-        case 14: condCode = '(!c.cz&&(c.cn===c.cv))'; break;
-        case 15: condCode = '(c.cz||(c.cn!==c.cv))'; break;
+        case 0: 
+            condCode = 'true'; 
+        break;
+        case 1: 
+            condCode = 'false'; 
+        break;
+        case 2: 
+            condCode = '(!c.cc&&!c.cz)'; 
+        break;
+        case 3: 
+            condCode = '(c.cc||c.cz)'; 
+        break;
+        case 4: 
+            condCode = '!c.cc'; 
+        break;
+        case 5: 
+            condCode = 'c.cc'; 
+        break;
+        case 6: 
+            condCode = '!c.cz'; 
+        break;
+        case 7: 
+            condCode = 'c.cz'; 
+        break;
+        case 8: 
+            condCode = '!c.cv'; 
+        break;
+        case 9: 
+            condCode = 'c.cv'; 
+        break;
+        case 10: 
+            condCode = '!c.cn'; 
+        break;
+        case 11: 
+            condCode = 'c.cn'; 
+        break;
+        case 12: 
+            condCode = '(c.cn===c.cv)'; 
+        break;
+        case 13: 
+            condCode = '(c.cn!==c.cv)'; 
+        break;
+        case 14: 
+            condCode = '(!c.cz&&(c.cn===c.cv))'; 
+        break;
+        case 15: 
+            condCode = '(c.cz||(c.cn!==c.cv))'; 
+        break;
     }
 
     if ((inst & 0x00f8) === 0x00f8 && (r === 2 || r === 3 || r === 4)) {
@@ -48,10 +80,12 @@ exports.decode = function (cpu, pc, inst) {
             };
         }
         trapNextPc = pc + 2;
-        if (r === 2)
+        if (r === 2) {
             trapNextPc = pc + 4;
-        else if (r === 3)
+        }
+        else if (r === 3) {
             trapNextPc = pc + 6;
+        }
         return {
             'in': { 'pc': true, 'n': true, 'z': true, 'v': true, 'c': true },
             'code': [ 'if(' + condCode + '){c.exception(7,' + trapNextPc + ');}else{c.pc=' + trapNextPc + ';}' ],
@@ -76,8 +110,12 @@ exports.decode = function (cpu, pc, inst) {
         sccEa = cpu.effectiveAddress(
             pc,
             inst,
-            function (dstEa) { return dstEa + '=((' + dstEa + ')&0xffffff00)|((' + condCode + ')?0xff:0x00);'; },
-            function (dstEa) { return 'c.s8(' + dstEa + ',(' + condCode + ')?0xff:0x00);'; },
+            function (dstEa) { 
+                return dstEa + '=((' + dstEa + ')&0xffffff00)|((' + condCode + ')?0xff:0x00);'; 
+            },
+            function (dstEa) { 
+                return 'c.s8(' + dstEa + ',(' + condCode + ')?0xff:0x00);'; 
+            },
             1
         );
         return {
@@ -148,27 +186,32 @@ exports.decode = function (cpu, pc, inst) {
             pc + 2, mode, r,
             function (dstEa) {
                 if (size === 2) {
-                    if (isSub)
+                    if (isSub) {
                         return 'var src=' + data + ';var dst=(' + dstEa + ')>>>0;var res=(dst-src)>>>0;' + dstEa + '=res>>>0;';
+                    }
                     return 'var src=' + data + ';var dst=(' + dstEa + ')>>>0;var res=(dst+src)>>>0;' + dstEa + '=res>>>0;';
                 }
-                if (isSub)
+                if (isSub) {
                     return 'var src=' + data + ';var dst=(' + dstEa + ')&' + sizeMask + ';var res=(dst-src)&' + sizeMask + ';' + dstEa + '=((' + dstEa + ')&' + keepMask + ')|res;';
+                }
                 return 'var src=' + data + ';var dst=(' + dstEa + ')&' + sizeMask + ';var res=(dst+src)&' + sizeMask + ';' + dstEa + '=((' + dstEa + ')&' + keepMask + ')|res;';
             },
             function (dstEa) {
                 if (size === 0) {
-                    if (isSub)
+                    if (isSub) {
                         return 'var src=' + data + ';var dst=c.l8(' + dstEa + ');var res=(dst-src)&0xff;c.s8(' + dstEa + ',res);';
+                    }
                     return 'var src=' + data + ';var dst=c.l8(' + dstEa + ');var res=(dst+src)&0xff;c.s8(' + dstEa + ',res);';
                 }
                 if (size === 1) {
-                    if (isSub)
+                    if (isSub) {
                         return 'var src=' + data + ';var dst=c.l16(' + dstEa + ');var res=(dst-src)&0xffff;c.s16(' + dstEa + ',res);';
+                    }
                     return 'var src=' + data + ';var dst=c.l16(' + dstEa + ');var res=(dst+src)&0xffff;c.s16(' + dstEa + ',res);';
                 }
-                if (isSub)
+                if (isSub) {
                     return 'var src=' + data + ';var dst=c.l32(' + dstEa + ')>>>0;var res=(dst-src)>>>0;c.s32(' + dstEa + ',res>>>0);';
+                }
                 return 'var src=' + data + ';var dst=c.l32(' + dstEa + ')>>>0;var res=(dst+src)>>>0;c.s32(' + dstEa + ',res>>>0);';
             },
             size === 0 ? 1 : size === 1 ? 2 : 4

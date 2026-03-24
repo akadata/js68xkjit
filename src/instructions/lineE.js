@@ -36,23 +36,26 @@ exports.decode = function (cpu, pc, inst) {
                 break;
             case 0xA:
                 code.push('var bfNew=(bfField^(bfWidth===32?0xffffffff:((1<<bfWidth)-1)))>>>0;');
-                if (bfEa.kind === 'reg')
+                if (bfEa.kind === 'reg') {
                     code.push('c.d[' + bfEa.index + ']=c.bitFieldWriteReg(bfValue,bfOffset,bfWidth,bfNew);');
-                else
+                } else {
                     code.push('c.bitFieldWriteMem(bfEa,bfOffset,bfWidth,bfNew);');
+                }
                 break;
             case 0xC:
-                if (bfEa.kind === 'reg')
+                if (bfEa.kind === 'reg') {
                     code.push('c.d[' + bfEa.index + ']=c.bitFieldWriteReg(bfValue,bfOffset,bfWidth,0);');
-                else
+                } else {
                     code.push('c.bitFieldWriteMem(bfEa,bfOffset,bfWidth,0);');
+                }
                 break;
             case 0xE:
                 code.push('var bfSetValue=(bfWidth===32?0xffffffff:((1<<bfWidth)-1))>>>0;');
-                if (bfEa.kind === 'reg')
+                if (bfEa.kind === 'reg') {
                     code.push('c.d[' + bfEa.index + ']=c.bitFieldWriteReg(bfValue,bfOffset,bfWidth,bfSetValue);');
-                else
+                } else {
                     code.push('c.bitFieldWriteMem(bfEa,bfOffset,bfWidth,bfSetValue);');
+                }
                 break;
             case 0x9:
                 code.push('c.d[' + dstReg + ']=bfField>>>0;');
@@ -67,10 +70,11 @@ exports.decode = function (cpu, pc, inst) {
                 code.push('var bfInsert=c.bitFieldInsertValue(c.d[' + dstReg + '],bfWidth);');
                 code.push('c.cn=((bfInsert>>>(bfWidth-1))&1)!==0;');
                 code.push('c.cz=(bfInsert===0);');
-                if (bfEa.kind === 'reg')
+                if (bfEa.kind === 'reg') {
                     code.push('c.d[' + bfEa.index + ']=c.bitFieldWriteReg(bfValue,bfOffset,bfWidth,bfInsert);');
-                else
+                } else {
                     code.push('c.bitFieldWriteMem(bfEa,bfOffset,bfWidth,bfInsert);');
+                }
                 break;
             default:
                 break;

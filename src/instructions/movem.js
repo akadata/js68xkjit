@@ -3,8 +3,9 @@ function reverseMask16(mask) {
     var i;
 
     for (i = 0; i < 16; ++i) {
-        if (mask & (1 << i))
+        if (mask & (1 << i)) {
             reversed |= (1 << (15 - i));
+        }
     }
     return reversed & 0xffff;
 }
@@ -15,15 +16,21 @@ function resolveEa(cpu, pc, mode, reg, load) {
 
     switch (mode) {
         case 2:
-            return { expr: 'c.a[' + reg + ']>>>0', pc: pc };
+            return { 
+                expr: 'c.a[' + reg + ']>>>0', pc: pc 
+            };
         case 3:
-            if (!load)
+            if (!load) {
                 throw new Error('MOVEM register-to-memory does not support postincrement destination');
+            }
             return { expr: 'c.a[' + reg + ']>>>0', pc: pc, postincrement: true, reg: reg };
         case 4:
-            if (load)
+            if (load) {
                 throw new Error('MOVEM memory-to-register does not support predecrement source');
-            return { expr: 'c.a[' + reg + ']>>>0', pc: pc, predecrement: true, reg: reg };
+            }
+            return { 
+                expr: 'c.a[' + reg + ']>>>0', pc: pc, predecrement: true, reg: reg 
+            };
         case 5:
             disp = cpu.context.fetch(pc);
             return { expr: '(c.a[' + reg + ']+' + cpu.extS16U32(disp) + ')>>>0', pc: pc + 2 };
@@ -32,12 +39,18 @@ function resolveEa(cpu, pc, mode, reg, load) {
         case 7:
             switch (reg) {
                 case 0:
-                    return { expr: '' + cpu.extS16U32(cpu.context.fetch(pc)), pc: pc + 2 };
+                    return { 
+                        expr: '' + cpu.extS16U32(cpu.context.fetch(pc)), pc: pc + 2 
+                    };
                 case 1:
-                    return { expr: '' + (cpu.context.l32(pc) >>> 0), pc: pc + 4 };
+                    return { 
+                        expr: '' + (cpu.context.l32(pc) >>> 0), pc: pc + 4 
+                    };
                 case 2:
                     disp = cpu.context.fetch(pc);
-                    return { expr: '' + cpu.addU32S16(pc, disp), pc: pc + 2 };
+                    return { 
+                        expr: '' + cpu.addU32S16(pc, disp), pc: pc + 2 
+                    };
                 case 3:
                     return cpu.indexedEaInfo(pc, '' + pc);
             }
@@ -58,14 +71,17 @@ exports.decode = function (cpu, pc, inst) {
     code.push('var movemAddr=(' + ea.expr + ')>>>0;');
     if (load) {
         code.push('var movemNext=c.movemLoad(movemAddr,' + mask + ',' + size + ');');
-        if (ea.postincrement)
+        if (ea.postincrement) {
             code.push('c.a[' + ea.reg + ']=movemNext>>>0;');
+        }
     } else {
-        if (ea.predecrement)
+        if (ea.predecrement) {
             mask = reverseMask16(mask);
+        }
         code.push('var movemNext=c.movemStore(movemAddr,' + mask + ',' + size + ',' + (ea.predecrement ? 'true' : 'false') + ');');
-        if (ea.predecrement)
+        if (ea.predecrement) {
             code.push('c.a[' + ea.reg + ']=movemNext>>>0;');
+        }
     }
 
     return {

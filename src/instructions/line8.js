@@ -51,10 +51,11 @@ exports.decode = function (cpu, pc, inst) {
         code.push('c.cc=cFlagSr;');
         code.push('c.cx=cFlagSr;');
         code.push('if(result!==0)c.cz=0;');
-        if (memMode)
+        if (memMode) {
             code.push('c.s8(c.a[' + r + '],result);');
-        else
+        } else {
             code.push('c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|result;');
+        }
         return {
             'in': { 'x': true, 'z': true },
             'code': code,
@@ -67,23 +68,35 @@ exports.decode = function (cpu, pc, inst) {
         case 3:
             ea = cpu.effectiveAddress(
                 pc, inst,
-                function (srcEa) { return 'c.d[' + r + ']=c.divu(' + srcEa + ',c.d[' + r + ']);'; },
-                function (srcEa) { return 'c.d[' + r + ']=c.divu(c.l16(' + srcEa + '),c.d[' + r + ']);'; },
+                function (srcEa) { 
+                    return 'c.d[' + r + ']=c.divu(' + srcEa + ',c.d[' + r + ']);'; 
+                },
+                function (srcEa) { 
+                    return 'c.d[' + r + ']=c.divu(c.l16(' + srcEa + '),c.d[' + r + ']);'; 
+                },
                 2
             );
             code.push(ea.code);
             out = { 'n': 'c.t[0]&8', 'z': 'c.t[0]&4', 'v': 'c.t[0]&2', 'c': false };
-            return { 'code': code, 'out': out, 'pc': ea.pc };
+            return { 
+                'code': code, 'out': out, 'pc': ea.pc 
+            };
         case 7:
             ea = cpu.effectiveAddress(
                 pc, inst,
-                function (srcEa) { return 'c.d[' + r + ']=c.divs(' + srcEa + ',c.d[' + r + ']);'; },
-                function (srcEa) { return 'c.d[' + r + ']=c.divs(c.l16(' + srcEa + '),c.d[' + r + ']);'; },
+                function (srcEa) { 
+                    return 'c.d[' + r + ']=c.divs(' + srcEa + ',c.d[' + r + ']);'; 
+                },
+                function (srcEa) { 
+                    return 'c.d[' + r + ']=c.divs(c.l16(' + srcEa + '),c.d[' + r + ']);'; 
+                },
                 2
             );
             code.push(ea.code);
             out = { 'n': 'c.t[0]&8', 'z': 'c.t[0]&4', 'v': 'c.t[0]&2', 'c': false };
-            return { 'code': code, 'out': out, 'pc': ea.pc };
+            return { 
+                'code': code, 'out': out, 'pc': ea.pc 
+            };
         case 5:
             if ((inst & 0xf1f0) === 0x8140 || (inst & 0xf1f0) === 0x8148) {
                 packAdj = cpu.context.fetch(pc + 2);
@@ -152,13 +165,18 @@ exports.decode = function (cpu, pc, inst) {
             ea = cpu.effectiveAddress(
                 pc, inst,
                 function (srcEa) {
-                    if (logicSize === 4)
+                    if (logicSize === 4) {
                         return 'var src=(' + srcEa + ')>>>0;var dst=c.d[' + r + ']>>>0;var res=(dst|src)>>>0;c.d[' + r + ']=res>>>0;';
+                    }
                     return 'var src=(' + srcEa + ')&' + logicMask + ';var dst=c.d[' + r + ']&' + logicMask + ';var res=(dst|src)&' + logicMask + ';c.d[' + r + ']=(c.d[' + r + ']&' + logicKeepMask + ')|res;';
                 },
                 function (srcEa) {
-                    if (logicSize === 1) return 'var src=c.l8(' + srcEa + ');var dst=c.d[' + r + ']&0xff;var res=(dst|src)&0xff;c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|res;';
-                    if (logicSize === 2) return 'var src=c.l16(' + srcEa + ');var dst=c.d[' + r + ']&0xffff;var res=(dst|src)&0xffff;c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|res;';
+                    if (logicSize === 1) {
+                        return 'var src=c.l8(' + srcEa + ');var dst=c.d[' + r + ']&0xff;var res=(dst|src)&0xff;c.d[' + r + ']=(c.d[' + r + ']&0xffffff00)|res;';
+                    }
+                    if (logicSize === 2) {
+                        return 'var src=c.l16(' + srcEa + ');var dst=c.d[' + r + ']&0xffff;var res=(dst|src)&0xffff;c.d[' + r + ']=(c.d[' + r + ']&0xffff0000)|res;';
+                    }
                     return 'var src=c.l32(' + srcEa + ');var dst=c.d[' + r + ']>>>0;var res=(dst|src)>>>0;c.d[' + r + ']=res>>>0;';
                 },
                 logicSize
@@ -172,13 +190,18 @@ exports.decode = function (cpu, pc, inst) {
         orDst = cpu.effectiveAddressDst(
             pc + 2, (inst >> 3) & 7, inst & 7,
             function (dstEa) {
-                if (logicSize === 4)
+                if (logicSize === 4) {
                     return 'var src=c.d[' + r + ']>>>0;var dst=(' + dstEa + ')>>>0;var res=(dst|src)>>>0;' + dstEa + '=res>>>0;';
+                }
                 return 'var src=c.d[' + r + ']&' + logicMask + ';var dst=(' + dstEa + ')&' + logicMask + ';var res=(dst|src)&' + logicMask + ';' + dstEa + '=((' + dstEa + ')&' + logicKeepMask + ')|res;';
             },
             function (dstEa) {
-                if (logicSize === 1) return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst|src)&0xff;c.s8(' + dstEa + ',res);';
-                if (logicSize === 2) return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst|src)&0xffff;c.s16(' + dstEa + ',res);';
+                if (logicSize === 1) {
+                    return 'var src=c.d[' + r + ']&0xff;var dst=c.l8(' + dstEa + ');var res=(dst|src)&0xff;c.s8(' + dstEa + ',res);';
+                }
+                if (logicSize === 2) {
+                    return 'var src=c.d[' + r + ']&0xffff;var dst=c.l16(' + dstEa + ');var res=(dst|src)&0xffff;c.s16(' + dstEa + ',res);';
+                }
                 return 'var src=c.d[' + r + ']>>>0;var dst=c.l32(' + dstEa + ');var res=(dst|src)>>>0;c.s32(' + dstEa + ',res>>>0);';
             },
             logicSize

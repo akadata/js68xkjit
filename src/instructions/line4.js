@@ -25,8 +25,9 @@ exports.decode = function (cpu, pc, inst) {
     var disp;
     var chkCode;
 
-    if (inst === 0x4e71)
+    if (inst === 0x4e71) {
         return { 'code': [], 'pc': pc + 2 };
+    }
 
     if (inst === 0x4e75) {
         return {
@@ -64,8 +65,9 @@ exports.decode = function (cpu, pc, inst) {
         };
     }
 
-    if (inst === 0x4e70)
+    if (inst === 0x4e70) {
         return { 'code': ['/* RESET */'], 'pc': pc + 2 };
+    }
 
     if (inst === 0x4e7a || inst === 0x4e7b) {
         movecExt = cpu.context.fetch(pc + 2);
@@ -74,14 +76,30 @@ exports.decode = function (cpu, pc, inst) {
         movecCr = movecExt & 0x0fff;
         movecRegRef = (movecIsAddr ? 'c.a[' : 'c.d[') + movecReg + ']';
         switch (movecCr) {
-            case 0x000: movecRead = '(c.sfc>>>0)'; movecWrite = 'c.sfc=(src&7);'; break;
-            case 0x001: movecRead = '(c.dfc>>>0)'; movecWrite = 'c.dfc=(src&7);'; break;
-            case 0x002: movecRead = '(c.cacr>>>0)'; movecWrite = 'c.cacr=(src>>>0);'; break;
-            case 0x800: movecRead = '(c.usp>>>0)'; movecWrite = 'c.usp=(src>>>0);'; break;
-            case 0x801: movecRead = '(c.vbr>>>0)'; movecWrite = 'c.vbr=(src>>>0);'; break;
-            case 0x802: movecRead = '(c.caar>>>0)'; movecWrite = 'c.caar=(src>>>0);'; break;
-            case 0x803: movecRead = '(c.msp>>>0)'; movecWrite = 'c.msp=(src>>>0);'; break;
-            case 0x804: movecRead = '(c.isp>>>0)'; movecWrite = 'c.isp=(src>>>0);'; break;
+            case 0x000: 
+                movecRead = '(c.sfc>>>0)'; movecWrite = 'c.sfc=(src&7);';
+            break;
+            case 0x001: 
+                movecRead = '(c.dfc>>>0)'; movecWrite = 'c.dfc=(src&7);'; 
+            break;
+            case 0x002: 
+                movecRead = '(c.cacr>>>0)'; movecWrite = 'c.cacr=(src>>>0);'; 
+            break;
+            case 0x800: 
+                movecRead = '(c.usp>>>0)'; movecWrite = 'c.usp=(src>>>0);'; 
+            break;
+            case 0x801: 
+                movecRead = '(c.vbr>>>0)'; movecWrite = 'c.vbr=(src>>>0);'; 
+            break;
+            case 0x802: 
+                movecRead = '(c.caar>>>0)'; movecWrite = 'c.caar=(src>>>0);';
+            break;
+            case 0x803: 
+                movecRead = '(c.msp>>>0)'; movecWrite = 'c.msp=(src>>>0);'; 
+            break;
+            case 0x804: 
+                movecRead = '(c.isp>>>0)'; movecWrite = 'c.isp=(src>>>0);'; 
+            break;
         }
         if (movecRead === null) {
             return {
@@ -130,24 +148,35 @@ exports.decode = function (cpu, pc, inst) {
         };
     }
 
-    if ((inst & 0xfff8) === 0x4848)
+    if ((inst & 0xfff8) === 0x4848) {
         return { 'code': ['/* BKPT */'], 'pc': pc + 2 };
+    }
 
     if (op === 7) {
         ea = cpu.effectiveAddress(
             pc, inst,
-            function (srcEa) { return 'c.a[' + r + ']=' + srcEa + ';'; },
-            function (srcEa) { return 'c.a[' + r + ']=' + srcEa + ';'; },
+            function (srcEa) { 
+                return 'c.a[' + r + ']=' + srcEa + ';'; 
+            },
+            function (srcEa) { 
+                return 'c.a[' + r + ']=' + srcEa + ';'; 
+            },
             4
         );
-        return { 'code': [ea.code], 'pc': ea.pc };
+        return { 
+            'code': [ea.code], 'pc': ea.pc 
+        };
     }
 
     if (op === 1 && r === 4 && mode >= 2) {
         ea = cpu.effectiveAddress(
             pc, inst,
-            function () { return ''; },
-            function () { return ''; },
+            function () { 
+                return ''; 
+            },
+            function () { 
+                return ''; 
+            },
             4
         );
         return {
@@ -162,10 +191,16 @@ exports.decode = function (cpu, pc, inst) {
             sizeBytes = size === 0 ? 1 : size === 1 ? 2 : 4;
             ea = cpu.effectiveAddress(
                 pc, inst,
-                function (dstEa) { return dstEa + '=0;'; },
+                function (dstEa) { 
+                    return dstEa + '=0;'; 
+                },
                 function (dstEa) {
-                    if (sizeBytes === 1) return 'c.s8(' + dstEa + ',0);';
-                    if (sizeBytes === 2) return 'c.s16(' + dstEa + ',0);';
+                    if (sizeBytes === 1) {
+                        return 'c.s8(' + dstEa + ',0);';
+                    }
+                    if (sizeBytes === 2) {
+                        return 'c.s16(' + dstEa + ',0);';
+                    }
                     return 'c.s32(' + dstEa + ',0);';
                 },
                 sizeBytes
@@ -188,13 +223,18 @@ exports.decode = function (cpu, pc, inst) {
             ea = cpu.effectiveAddress(
                 pc, inst,
                 function (dstEa) {
-                    if (sizeBytes === 4)
+                    if (sizeBytes === 4) {
                         return 'var dst=(' + dstEa + ')&(' + sizeMask + ');var res=(~dst)&(' + sizeMask + ');' + dstEa + '=res>>>0;';
+                    }
                     return 'var dst=(' + dstEa + ')&(' + sizeMask + ');var res=(~dst)&(' + sizeMask + ');' + dstEa + '=((' + dstEa + ')&' + keepMask + ')|res;';
                 },
                 function (dstEa) {
-                    if (sizeBytes === 1) return 'var dst=c.l8(' + dstEa + ');var res=(~dst)&0xff;c.s8(' + dstEa + ',res);';
-                    if (sizeBytes === 2) return 'var dst=c.l16(' + dstEa + ');var res=(~dst)&0xffff;c.s16(' + dstEa + ',res);';
+                    if (sizeBytes === 1) {
+                        return 'var dst=c.l8(' + dstEa + ');var res=(~dst)&0xff;c.s8(' + dstEa + ',res);';
+                    }
+                    if (sizeBytes === 2) {
+                        return 'var dst=c.l16(' + dstEa + ');var res=(~dst)&0xffff;c.s16(' + dstEa + ',res);';
+                    }
                     return 'var dst=c.l32(' + dstEa + ');var res=(~dst)>>>0;c.s32(' + dstEa + ',res);';
                 },
                 sizeBytes
@@ -215,10 +255,16 @@ exports.decode = function (cpu, pc, inst) {
             highBit = size === 0 ? '0x80' : size === 1 ? '0x8000' : '0x80000000';
             ea = cpu.effectiveAddress(
                 pc, inst,
-                function (dstEa) { return 'var dst=(' + dstEa + ')&(' + sizeMask + ');var res=(-dst)&(' + sizeMask + ');' + dstEa + '=res;'; },
+                function (dstEa) { 
+                    return 'var dst=(' + dstEa + ')&(' + sizeMask + ');var res=(-dst)&(' + sizeMask + ');' + dstEa + '=res;'; 
+                },
                 function (dstEa) {
-                    if (sizeBytes === 1) return 'var dst=c.l8(' + dstEa + ');var res=(-dst)&0xff;c.s8(' + dstEa + ',res);';
-                    if (sizeBytes === 2) return 'var dst=c.l16(' + dstEa + ');var res=(-dst)&0xffff;c.s16(' + dstEa + ',res);';
+                    if (sizeBytes === 1) {
+                        return 'var dst=c.l8(' + dstEa + ');var res=(-dst)&0xff;c.s8(' + dstEa + ',res);';
+                    }
+                    if (sizeBytes === 2) {
+                        return 'var dst=c.l16(' + dstEa + ');var res=(-dst)&0xffff;c.s16(' + dstEa + ',res);';
+                    }
                     return 'var dst=c.l32(' + dstEa + ');var res=(-dst)>>>0;c.s32(' + dstEa + ',res);';
                 },
                 sizeBytes
@@ -249,8 +295,12 @@ exports.decode = function (cpu, pc, inst) {
                     return 'var oldZ=c.cz;var dst=(' + dstEa + ')&' + sizeMask + ';var x=(c.cx?1:0);var srcx=(dst+x)&' + sizeMask + ';var ext=dst+x;var res=(0-ext)&' + sizeMask + ';' + dstEa + '=res;';
                 },
                 function (dstEa) {
-                    if (sizeBytes === 1) return 'var oldZ=c.cz;var dst=c.l8(' + dstEa + ');var x=(c.cx?1:0);var srcx=(dst+x)&0xff;var ext=dst+x;var res=(0-ext)&0xff;c.s8(' + dstEa + ',res);';
-                    if (sizeBytes === 2) return 'var oldZ=c.cz;var dst=c.l16(' + dstEa + ');var x=(c.cx?1:0);var srcx=(dst+x)&0xffff;var ext=dst+x;var res=(0-ext)&0xffff;c.s16(' + dstEa + ',res);';
+                    if (sizeBytes === 1) {
+                        return 'var oldZ=c.cz;var dst=c.l8(' + dstEa + ');var x=(c.cx?1:0);var srcx=(dst+x)&0xff;var ext=dst+x;var res=(0-ext)&0xff;c.s8(' + dstEa + ',res);';
+                    }
+                    if (sizeBytes === 2) {
+                        return 'var oldZ=c.cz;var dst=c.l16(' + dstEa + ');var x=(c.cx?1:0);var srcx=(dst+x)&0xffff;var ext=dst+x;var res=(0-ext)&0xffff;c.s16(' + dstEa + ',res);';
+                    }
                     return 'var oldZ=c.cz;var dst=c.l32(' + dstEa + ');var x=(c.cx?1:0);var srcx=(dst+x)>>>0;var ext=(dst>>>0)+x;var res=(0-ext)>>>0;c.s32(' + dstEa + ',res>>>0);';
                 },
                 sizeBytes
@@ -278,10 +328,16 @@ exports.decode = function (cpu, pc, inst) {
             highBit = size === 0 ? '0x80' : size === 1 ? '0x8000' : '0x80000000';
             ea = cpu.effectiveAddress(
                 pc, inst,
-                function (srcEa) { return 'var t=(' + srcEa + ')&' + sizeMask + ';'; },
+                function (srcEa) { 
+                    return 'var t=(' + srcEa + ')&' + sizeMask + ';'; 
+                },
                 function (srcEa) {
-                    if (sizeBytes === 1) return 'var t=c.l8(' + srcEa + ')&0xff;';
-                    if (sizeBytes === 2) return 'var t=c.l16(' + srcEa + ')&0xffff;';
+                    if (sizeBytes === 1) {
+                        return 'var t=c.l8(' + srcEa + ')&0xff;';
+                    }
+                    if (sizeBytes === 2) {
+                        return 'var t=c.l16(' + srcEa + ')&0xffff;';
+                    }
                     return 'var t=c.l32(' + srcEa + ');';
                 },
                 sizeBytes
@@ -297,8 +353,12 @@ exports.decode = function (cpu, pc, inst) {
     if ((inst & 0xffc0) === 0x4ac0) {
         ea = cpu.effectiveAddress(
             pc, inst,
-            function (dstEa) { return 'var t=(' + dstEa + ')&0xff;c.cz=(t==0);c.cn=((t&0x80)!==0);' + dstEa + '=((' + dstEa + ')&0xffffff00)|(t|0x80);'; },
-            function (dstEa) { return 'var t=c.l8(' + dstEa + ');c.cz=(t==0);c.cn=(t>>7)&1;c.s8(' + dstEa + ',t|0x80);'; },
+            function (dstEa) { 
+                return 'var t=(' + dstEa + ')&0xff;c.cz=(t==0);c.cn=((t&0x80)!==0);' + dstEa + '=((' + dstEa + ')&0xffffff00)|(t|0x80);'; 
+            },
+            function (dstEa) { 
+                return 'var t=c.l8(' + dstEa + ');c.cz=(t==0);c.cn=(t>>7)&1;c.s8(' + dstEa + ',t|0x80);'; 
+            },
             1
         );
         return {
@@ -347,14 +407,21 @@ exports.decode = function (cpu, pc, inst) {
         };
     }
 
-    if (inst === 0x46d8 || (op === 1 && r === 3 && mode === 2))
-        return { 'code': ['c.setSr(c.l16(c.a[7]));c.a[7]+=2;'], 'pc': pc + 2 };
+    if (inst === 0x46d8 || (op === 1 && r === 3 && mode === 2)) {
+        return { 
+            'code': ['c.setSr(c.l16(c.a[7]));c.a[7]+=2;'], 'pc': pc + 2 
+        };
+    }
 
     if ((inst & 0xffc0) === 0x40c0) {
         ea = cpu.effectiveAddress(
             pc, inst,
-            function (dstEa) { return dstEa + '=(c.sr&0xffff);'; },
-            function (dstEa) { return 'c.s16(' + dstEa + ',c.sr&0xffff);'; },
+            function (dstEa) { 
+                return dstEa + '=(c.sr&0xffff);'; 
+            },
+            function (dstEa) { 
+                return 'c.s16(' + dstEa + ',c.sr&0xffff);'; 
+            },
             2
         );
         return {
@@ -367,8 +434,12 @@ exports.decode = function (cpu, pc, inst) {
     if ((inst & 0xffc0) === 0x42c0) {
         ea = cpu.effectiveAddress(
             pc, inst,
-            function (dstEa) { return dstEa + '=(c.sr&0x1f);'; },
-            function (dstEa) { return 'c.s16(' + dstEa + ',c.sr&0x1f);'; },
+            function (dstEa) { 
+                return dstEa + '=(c.sr&0x1f);'; 
+            },
+            function (dstEa) { 
+                return 'c.s16(' + dstEa + ',c.sr&0x1f);'; 
+            },
             2
         );
         return {
@@ -381,8 +452,12 @@ exports.decode = function (cpu, pc, inst) {
     if ((inst & 0xffc0) === 0x44c0) {
         ea = cpu.effectiveAddress(
             pc, inst,
-            function (srcEa) { return 'c.setCcr(' + srcEa + '&0xff);'; },
-            function (srcEa) { return 'c.setCcr(c.l16(' + srcEa + ')&0xff);'; },
+            function (srcEa) { 
+                return 'c.setCcr(' + srcEa + '&0xff);'; 
+            },
+            function (srcEa) { 
+                return 'c.setCcr(c.l16(' + srcEa + ')&0xff);'; 
+            },
             2
         );
         return {
@@ -394,8 +469,12 @@ exports.decode = function (cpu, pc, inst) {
     if ((inst & 0xffc0) === 0x46c0) {
         ea = cpu.effectiveAddress(
             pc, inst,
-            function (srcEa) { return 'c.setSr(' + srcEa + '&0xffff);'; },
-            function (srcEa) { return 'c.setSr(c.l16(' + srcEa + '));'; },
+            function (srcEa) { 
+                return 'c.setSr(' + srcEa + '&0xffff);'; 
+            },
+            function (srcEa) { 
+                return 'c.setSr(c.l16(' + srcEa + '));'; 
+            },
             2
         );
         return {
@@ -405,10 +484,14 @@ exports.decode = function (cpu, pc, inst) {
     }
 
     if ((inst & 0xfff8) === 0x4e60)
-        return { 'code': ['c.usp=c.a[' + r + '];'], 'pc': pc + 2 };
+        return { 
+            'code': ['c.usp=c.a[' + r + '];'], 'pc': pc + 2 
+        };
 
     if ((inst & 0xfff8) === 0x4e68)
-        return { 'code': ['c.a[' + r + ']=c.usp;'], 'pc': pc + 2 };
+        return { 
+            'code': ['c.a[' + r + ']=c.usp;'], 'pc': pc + 2 
+        };
 
     if ((inst & 0xfff0) === 0x4e40) {
         vec = inst & 0xf;
@@ -431,8 +514,12 @@ exports.decode = function (cpu, pc, inst) {
     if ((inst & 0xf1c0) === 0x4180) {
         ea = cpu.effectiveAddress(
             pc, inst,
-            function (srcEa) { return 'var upper=c.xw((' + srcEa + ')&0xffff);'; },
-            function (srcEa) { return 'var upper=c.xw(c.l16(' + srcEa + '));'; },
+            function (srcEa) { 
+                return 'var upper=c.xw((' + srcEa + ')&0xffff);'; 
+            },
+            function (srcEa) { 
+                return 'var upper=c.xw(c.l16(' + srcEa + '));'; 
+            },
             2
         );
         chkCode = [];
@@ -449,27 +536,39 @@ exports.decode = function (cpu, pc, inst) {
         };
     }
 
-    if (((inst & 0xff80) === 0x4880 || (inst & 0xff80) === 0x4c80) && mode >= 2)
+    if (((inst & 0xff80) === 0x4880 || (inst & 0xff80) === 0x4c80) && mode >= 2) {
         return movemInstruction.decode(cpu, pc, inst);
+    }
 
-    if ((inst & 0xffc0) === 0x4800)
+    if ((inst & 0xffc0) === 0x4800) {
         return nbcdInstruction.decode(cpu, pc, inst);
+    }
 
     if ((inst & 0xffc0) === 0x4ec0) {
         ea = cpu.effectiveAddress(
             pc, inst,
-            function (target) { return 'c.pc=' + target + ';'; },
-            function (target) { return 'c.pc=' + target + ';'; },
+            function (target) { 
+                return 'c.pc=' + target + ';'; 
+            },
+            function (target) { 
+                return 'c.pc=' + target + ';'; 
+            },
             4
         );
-        return { 'code': [ea.code], 'pc': pc + 2, 'quit': true };
+        return { 
+            'code': [ea.code], 'pc': pc + 2, 'quit': true 
+        };
     }
 
     if ((inst & 0xffc0) === 0x4e80) {
         ea = cpu.effectiveAddress(
             pc, inst,
-            function () { return ''; },
-            function () { return ''; },
+            function () { 
+                return ''; 
+            },
+            function () { 
+                return ''; 
+            },
             4
         );
         return {
